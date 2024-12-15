@@ -1,15 +1,19 @@
 from abc import abstractmethod, ABC
 from typing import Generic, TypeVar, Optional
 
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel
+
+from prism.chains.chain_manager import create_simple_chain
 
 BaseModelInput = TypeVar("BaseModelInput", bound=BaseModel, contravariant=True)
 BaseModelOutput = TypeVar("BaseModelOutput", bound=BaseModel, contravariant=True)
 LLmOutput = TypeVar("LLmOutput", covariant=True)
 
 
-class LLMPredictOp(BaseModel, Generic[BaseModelInput, LLmOutput], ABC):
-    llm_output_model: BaseModelOutput | str = str
+class LLMPredictOp(BaseModel, BaseTool, Generic[BaseModelInput, LLmOutput], ABC):
+    llm_output_model: type[BaseModel] | str = str
+    default_human_prompt: str = "",
 
     class Config:
         arbitrary_types_allowed = True
@@ -27,7 +31,9 @@ class LLMPredictOp(BaseModel, Generic[BaseModelInput, LLmOutput], ABC):
         return input
 
     async def _llm(self, input: BaseModelInput) -> Optional[LLmOutput]:
-        return None
+        chain = create_simple_chain(default_human_prompt=self.default_human_prompt,
+                                    llm_output_model=self.llm_output_model, )
+        return await chain.ainvoke(input.model_dump())
 
     async def _post_process(self, input: BaseModelInput, llm_output: Optional[LLmOutput]) -> Optional[LLmOutput]:
         return llm_output
