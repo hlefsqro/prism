@@ -2,10 +2,13 @@ import logging
 from abc import abstractmethod, ABC
 from typing import TypeVar, Optional, AsyncGenerator
 
+import simplejson
 from pydantic import BaseModel, Field
-from pyecharts.charts.base import Base
+from pyecharts.charts.base import Base, default
+from pyecharts.commons import utils
 
 from prism.chains.chain_manager import create_simple_chain
+from prism.common.codec import jsonloads
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +103,12 @@ class EChartOp(LLMPredictOp, ABC):
         if not isinstance(chart, Base):
             return None
 
+        options = utils.replace_placeholder(
+            simplejson.dumps(chart.get_options(), indent=None, separators=(',', ':'), default=default, ignore_nan=True,
+                             ensure_ascii=False)
+        )
+
         return EChartOpResp(
             chart=chart,
-            options=chart.get_options(),
+            options=jsonloads(options),
         )
