@@ -8,7 +8,6 @@ from pyecharts.charts.base import Base, default
 from pyecharts.commons import utils
 
 from prism.chains.chain_manager import create_simple_chain
-from prism.common.codec import jsonloads
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class EChartOpReq(BaseModel):
 
 class EChartOpResp(BaseModel):
     chart: Base = None
-    options: dict = None
+    options: str = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -104,11 +103,12 @@ class EChartOp(LLMPredictOp, ABC):
             return None
 
         options = utils.replace_placeholder(
-            simplejson.dumps(chart.get_options(), indent=None, separators=(',', ':'), default=default, ignore_nan=True,
-                             ensure_ascii=False)
+            simplejson.dumps(chart.get_options(), indent=None, default=default, ignore_nan=True, ensure_ascii=False)
         )
+
+        chart.dump_options()
 
         return EChartOpResp(
             chart=chart,
-            options=jsonloads(options),
+            options=options,
         )

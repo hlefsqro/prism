@@ -31,7 +31,7 @@ class AISearchSSE:
         return {"event": "related_questions", "data": data}
 
     @staticmethod
-    def echarts(data: dict):
+    def echarts(data: str):
         return {"event": "echarts", "data": data}
 
     @staticmethod
