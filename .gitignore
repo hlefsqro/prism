@@ -174,3 +174,4 @@ cython_debug/
 /backend/.idea/workspace.xml
 /backend/.idea/inspectionProfiles/profiles_settings.xml
 /backend/.idea/modules.xml
+/backend/demo/

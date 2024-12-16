@@ -13,9 +13,7 @@ def create_simple_chain(default_human_prompt: str,
     chat_prompt = get_chat_prompt(default_human_prompt=default_human_prompt)
     chat_llm = get_chat_llm_model()
 
-    if isinstance(llm_output_model, str):
-        return chat_prompt | chat_llm | StrOutputParser()
-    elif isinstance(llm_output_model, type) and issubclass(llm_output_model, BaseModel):
-        chat_llm.with_structured_output(llm_output_model)
+    if isinstance(llm_output_model, type) and issubclass(llm_output_model, BaseModel):
+        return chat_prompt | chat_llm.with_structured_output(llm_output_model)
     else:
-        return chat_prompt | chat_llm
+        return chat_prompt | chat_llm | StrOutputParser()

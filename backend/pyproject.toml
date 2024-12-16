@@ -43,6 +43,7 @@ opentelemetry-instrumentation-fastapi = "^0.50b0"
 opentelemetry-instrumentation-aiohttp-client = "^0.50b0"
 opentelemetry-instrumentation-requests = "^0.50b0"
 opentelemetry-instrumentation-httpx = "^0.50b0"
+langgraph = "^0.2.59"
 
 
 [build-system]
