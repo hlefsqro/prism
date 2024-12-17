@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     OTEL_TRACE_UPLOAD_URL: str = "http://127.0.0.1:4318/v1/traces"
     OPENAI_API_KEY: Optional[str] = None
     X_BEARER_TOKEN: Optional[str] = None
+    SEARCHAPI_API_KEY: Optional[str] = None
 
 
 SETTINGS = Settings()
