@@ -50,6 +50,7 @@ class AISearchAgent(object):
             for user_input in querys.queries:
                 search_querys.add(user_input)
 
+        search_querys = list(search_querys)
         yield AISearchSSE.query_rewriting(search_querys)
 
         x_search_tasks = [self._x_search_single_query(query) for query in search_querys]
