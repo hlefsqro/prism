@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import uvicorn
+from starlette.middleware.cors import CORSMiddleware
 
 from prism.common.config import SETTINGS
 from prism.common.log import Log
@@ -34,6 +35,12 @@ if __name__ == "__main__":
     Log.init()
     Otel.init()
     OtelFastAPI.init(app)
-    # app.add_middleware(LogMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     uvicorn.run(app, host=SETTINGS.HOST, port=SETTINGS.PORT, log_level="warning")
