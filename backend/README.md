@@ -1,26 +1,38 @@
 # prism backend
 
-# Installation
+## Installation
 
 -----------------
 
 Install Dependencies.
 
 ```shell
+cd backend
+poetry install
 ```
 
 API Server Local Running.
 
 ```shell
+python3 -m prism.app
 ```
 
-# Set up
+## Set up
 
-Before running prism with the following commands
+-----------------
+
+Before use prism setup with the following commands
 
 ```shell
-cd prism
-cp .env.example .env
+cp prism/.env.example prism/.env
 ```
 
-After running, you can Set your own OPENAPI_API_KEY, etc.
+After running, you can Set your own OPENAPI_API_KEY etc. configration in .env file
+
+## Backend Features List
+
+-----------------
+
+- Fully asynchronous
+- Built-in observability based on Opentelemetry
+- Funny large model operator development experience based on langchain/langgraph encapsulation

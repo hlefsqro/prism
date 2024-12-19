@@ -22,4 +22,4 @@ RUN poetry install --no-cache --no-root
 
 COPY prism /app/prism
 
-CMD ["poetry", "run", "python", "-m", "prism.app"]
+CMD ["python3", "-m", "prism.app"]
