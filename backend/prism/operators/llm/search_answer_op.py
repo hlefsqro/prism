@@ -6,18 +6,17 @@ from pydantic import BaseModel, computed_field
 from prism.operators.llm import LLMPredictOp
 
 DEFAULT_HUMAN_PROMPT = """\
-你是非常出色的 AI 搜索助理。你的任务是根据上下文回答用户提出的问题。
+You are a helpful AI search assistant. Your task is to answer the questions asked by users based on the context.
 
-## 要求
-- 充分利用上下文信息，但也不要盲目地逐字重复上下文
-- 答案目标语言: 中文
-- 答案必须 简洁、正确、准确
+## Requirements
+- Make full use of context information, but don't blindly repeat the context verbatim
+- The answer must be concise, correct and accurate
 
-## 以下是一组上下文：
+## Below is a set of context
 
 {context}
 
-## 以下是用户问题
+## Below is the user’s question
 
 {user_input}\
 """
@@ -31,7 +30,7 @@ class SearchAnswerReq(BaseModel):
     @property
     def context(self) -> str:
         if not self.resources:
-            return "未检索到相关上下文，请用你的知识回答用户问题"
+            return "No relevant context was found. Please use your knowledge to answer the user's question."
 
         context = ""
         for doc in self.resources:

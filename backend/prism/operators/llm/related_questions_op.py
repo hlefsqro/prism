@@ -7,18 +7,18 @@ from prism.operators.llm import LLMPredictOp, BaseModelInput
 from prism.operators.llm.search_answer_op import SearchAnswerReq
 
 DEFAULT_HUMAN_PROMPT = """\
-你是非常出色的 AI 搜索助理。你的任务是根据用户原始问题和上下文提出相关问题。
+You are a helpful assistant. Your task is to propose relevant questions based on the user’s original question and the context.
 
-## 要求
-- 充分利用上下文信息
-- 生成 3 个相关问题
-- 每个相关问题不超过 20 个字
+## Requirements
+- Make full use of the context information
+- Generate 3 relevant questions
+- Each relevant question should not exceed 20 words
 
-## 以下是一组上下文：
+## Below is a set of context
 
 {context}
 
-## 以下是用户原始问题
+## Below is the user’s original question
 
 {user_input}\
 """
@@ -28,7 +28,7 @@ class Questions(BaseModel):
     """
     Questions
     """
-    questions: List[str] = Field(default_factory=list, description="相关问题列表")
+    questions: List[str] = Field(default_factory=list, description="Related Questions List")
 
 
 class RelatedQuestionsReq(BaseModel):
@@ -39,7 +39,7 @@ class RelatedQuestionsReq(BaseModel):
     @property
     def context(self) -> str:
         if not self.resources:
-            return "无相关上下文，请自行发挥"
+            return "No relevant context, please use your own"
 
         context = ""
         for doc in self.resources:
