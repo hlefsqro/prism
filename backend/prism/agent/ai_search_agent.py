@@ -5,8 +5,8 @@ from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
 from prism.common.utils import select_evenly_spaced_elements
-from prism.operators.llm import UserInputReq, EChartOpReq, EChartOpResp
-from prism.operators.llm.echarts_tree_op import TreeMindMapEchartOp
+from prism.operators.llm import UserInputReq, EChartOpReq
+from prism.operators.llm.google_mindmap_op import GoogleMindMapOp, TreeMindmap
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
 from prism.operators.llm.search_answer_op import SearchAnswerOp, SearchAnswerReq
@@ -40,12 +40,8 @@ class AISearchSSE:
         return {"event": "related_questions", "data": jsondumps(data)}
 
     @staticmethod
-    def google_echarts_mindmap(data: str):
-        return {"event": "google_mindmap", "data": data}
-
-    @staticmethod
-    def x_markmap_mindmap(data: str):
-        return {"event": "x_mindmap", "data": data}
+    def mindmap(data: str):
+        return {"event": "mindmap", "data": data}
 
     @staticmethod
     def end():
@@ -56,6 +52,7 @@ class AISearchSSE:
 class AISearchAgent(object):
 
     async def search(self, user_input: str) -> AsyncGenerator:
+        org_user_input = user_input
         search_querys = set()
         search_querys.add(user_input)
         querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
@@ -106,18 +103,32 @@ class AISearchAgent(object):
         related_questions = await related_questions_task
         yield AISearchSSE.related_questions(related_questions.questions)
 
-        google_mindmap = await TreeMindMapEchartOp().predict(EChartOpReq(text=searchapi_answer))
-        if isinstance(google_mindmap, EChartOpResp):
-            yield AISearchSSE.google_echarts_mindmap(google_mindmap.options)
+        google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
+        x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
 
-        x_m = await XmindMapOp().predict(XmindMapReq(resources=select_evenly_spaced_elements(x_resources, 10)))
-        if isinstance(x_m, TwitterSummaryResp):
-            x_mindmap = f"# {user_input}\n\n"
-            for s in x_m.summaries:
-                x_mindmap += f"- {s.twitter_user_name} : {s.content_summary}\n\n"
-            yield AISearchSSE.x_markmap_mindmap(x_mindmap)
+        google_mindmap = await google_mindmap_task
+        x_mindmap = await x_mindmap_task
+
+        mindmap = f"# {org_user_input}\n\n"
+        if isinstance(google_mindmap, TreeMindmap):
+            mindmap += f"## Web Search\n\n"
+            mindmap += google_mindmap.to_markdown()
+
+            mindmap += "\n\n"
+        if isinstance(x_mindmap, TwitterSummaryResp):
+            mindmap += f"## X\n\n"
+            for s in x_mindmap.summaries:
+                mindmap += f"- {s.twitter_user_name} : {s.content_summary}\n\n"
+
+        yield AISearchSSE.mindmap(mindmap)
 
         yield AISearchSSE.end()
+
+    async def _google_mindmap_op(self, searchapi_answer: str):
+        return await GoogleMindMapOp().predict(EChartOpReq(text=searchapi_answer))
+
+    async def _x_mindmap_op(self, x_resources):
+        return await XmindMapOp().predict(XmindMapReq(resources=select_evenly_spaced_elements(x_resources, 10)))
 
     async def _x_search_single_query(self, query: str):
         return await XSearchOp().search(XSearchReq(query=query))
