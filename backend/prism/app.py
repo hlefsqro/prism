@@ -8,7 +8,7 @@ from starlette.middleware.cors import CORSMiddleware
 from prism.common.config import SETTINGS
 from prism.common.log import Log
 from prism.common.otel import Otel, OtelFastAPI
-from prism.routers import exception_handler
+from prism.routers import exception_handler, LogMiddleware
 from prism.routers.ai_search import ai_search_router
 from prism.routers.chat import chat_router
 from prism.routers.route_probe import probe_router
@@ -43,5 +43,6 @@ if __name__ == "__main__":
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(LogMiddleware)
 
     uvicorn.run(app, host=SETTINGS.HOST, port=SETTINGS.PORT, log_level="warning")

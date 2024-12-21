@@ -7,7 +7,9 @@ from fastapi.responses import ORJSONResponse
 from openai import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 
+from prism.common.config import SETTINGS
 from prism.common.otel import Otel
 
 T = TypeVar('T')
@@ -43,6 +45,18 @@ healthz_list = ["/healthz/readiness", "/healthz/liveness"]
 class LogMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
+
+        api_keys = SETTINGS.API_KEYS
+        if api_keys is not None and len(api_keys) > 0:
+            if request.url.path not in healthz_list:
+                api_key = request.headers.get("X-API-KEY")
+                if api_key not in api_keys:
+                    ret = RestResponse(code=ErrorCode.AUTH_ERROR, msg="No Auth")
+                    return JSONResponse(
+                        ret.dict(),
+                        status_code=200
+                    )
+
         response = await call_next(request)
 
         tid = Otel.get_cur_tid()

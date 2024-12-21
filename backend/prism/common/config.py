@@ -1,5 +1,7 @@
-from typing import Optional
+import json
+from typing import Optional, List
 
+from pydantic import field_validator, Field
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
 
@@ -17,6 +19,15 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     X_BEARER_TOKEN: Optional[str] = None
     SEARCHAPI_API_KEY: Optional[str] = None
+    API_KEYS: List[str] = Field(default_factory=list)
+
+    @field_validator('API_KEYS', mode='before')
+    def validator_api_keys(cls, v):
+        if isinstance(v, str):
+            v_list = json.loads(v)
+            if isinstance(v_list, list):
+                return v_list
+        return v
 
 
 SETTINGS = Settings()
