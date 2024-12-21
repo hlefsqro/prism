@@ -17,5 +17,5 @@ async def summariz(req: SummaryReq):
 
 
 @chat_router.get("/api/prism/ai/chat")
-async def ai_search(req: ChatReq):
-    return StreamingResponse(ChatOp.stream(req), media_type="text/event-stream")
+async def chat(req: ChatReq):
+    return StreamingResponse(ChatOp().stream(input=req), media_type="text/event-stream")
