@@ -19,6 +19,7 @@ LLmOutput = TypeVar("LLmOutput", covariant=True)
 class LLMPredictOp(ABC, BaseModel):
     llm_output_model: type[BaseModel] | str = str
     default_human_prompt: str = "",
+    image_url: Optional[str] = None,
 
     class Config:
         arbitrary_types_allowed = True

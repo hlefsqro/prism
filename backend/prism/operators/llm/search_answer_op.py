@@ -6,6 +6,38 @@ from pydantic import BaseModel, computed_field
 from prism.operators.llm import LLMPredictOp
 
 DEFAULT_HUMAN_PROMPT = """\
+You are a helpful AI search assistant. Your task is to analyze the questions asked by users based on the context.
+
+## Requirements
+- Make full use of context information, but don't blindly repeat the context verbatim
+- The output should be markdown
+- The output should be in English
+
+<Output format>
+
+## summary
+
+... ...
+
+## key points
+
+- x
+- y
+- z
+... ...
+
+</Output format>
+
+## Below is a set of context
+
+{context}
+
+## Below is the user’s question
+
+{user_input}\
+"""
+
+DEFAULT_HUMAN_PROMPT_1 = """\
 You are a helpful AI search assistant. Your task is to answer the questions asked by users based on the context.
 
 ## Requirements

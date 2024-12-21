@@ -1,9 +1,10 @@
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 
 def get_chat_prompt(default_human_prompt,
-                    default_system_prompt=None) -> ChatPromptTemplate:
+                    default_system_prompt=None,
+                    image_url=None) -> ChatPromptTemplate:
     system = default_system_prompt
     human = default_human_prompt
 
@@ -14,4 +15,15 @@ def get_chat_prompt(default_human_prompt,
 
     system_message = SystemMessage(content=system)
 
-    return ChatPromptTemplate.from_messages([system_message, human_message])
+    if image_url is None:
+        return ChatPromptTemplate.from_messages([system_message, human_message])
+
+    img_messag = HumanMessage(
+        content=[
+            {
+                "type": "image_url",
+                "image_url": {"url": image_url},
+            },
+        ]
+    )
+    return ChatPromptTemplate.from_messages([system_message, human_message, img_messag])

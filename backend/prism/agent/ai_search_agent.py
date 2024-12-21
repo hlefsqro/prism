@@ -4,11 +4,13 @@ from typing import AsyncGenerator, List
 from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
+from prism.common.utils import select_evenly_spaced_elements
 from prism.operators.llm import UserInputReq, EChartOpReq, EChartOpResp
 from prism.operators.llm.echarts_tree_op import TreeMindMapEchartOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
 from prism.operators.llm.search_answer_op import SearchAnswerOp, SearchAnswerReq
+from prism.operators.llm.x_mindmap_op import XmindMapOp, XmindMapReq, TwitterSummaryResp
 from prism.operators.search.searchapi import SearchApiOp, SearchApiReq
 from prism.operators.search.x import XSearchOp, XSearchReq
 
@@ -24,17 +26,26 @@ class AISearchSSE:
         return {"event": "resources", "data": json_str}
 
     @staticmethod
-    def answer(data: str):
+    def google_answer(data: str):
         """"""
-        return {"event": "answer", "data": data}
+        return {"event": "google_answer", "data": data}
+
+    @staticmethod
+    def x_answer(data: str):
+        """"""
+        return {"event": "x_answer", "data": data}
 
     @staticmethod
     def related_questions(data: list[str]):
         return {"event": "related_questions", "data": jsondumps(data)}
 
     @staticmethod
-    def echarts(data: str):
-        return {"event": "echarts", "data": data}
+    def google_echarts_mindmap(data: str):
+        return {"event": "google_mindmap", "data": data}
+
+    @staticmethod
+    def x_markmap_mindmap(data: str):
+        return {"event": "x_mindmap", "data": data}
 
     @staticmethod
     def end():
@@ -58,42 +69,53 @@ class AISearchAgent(object):
         x_search_tasks = [self._x_search_single_query(query) for query in search_querys]
         searchapi_search_tasks = [self._searchapi_search_single_query(query) for query in search_querys]
 
-        search_results = []
-
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
         searchapi_search_results = await asyncio.gather(*searchapi_search_tasks, return_exceptions=True)
 
-        search_results.extend(x_search_results)
-        search_results.extend(searchapi_search_results)
+        searchapi_resources: List[Document] = []
+        for search_result in searchapi_search_results:
+            if isinstance(search_result, Document):
+                searchapi_resources.append(search_result)
+
+        x_resources: List[Document] = []
+        for search_result in x_search_results:
+            if isinstance(search_result, list):
+                for x in search_result:
+                    if isinstance(x, Document):
+                        x_resources.append(x)
 
         resources: List[Document] = []
-
-        for search_ret in search_results:
-            if isinstance(search_ret, list) and search_ret:
-                for x in search_ret:
-                    if isinstance(x, Document):
-                        resources.append(x)
-                        yield AISearchSSE.resources(x.model_dump_json(exclude_none=True))
-            elif isinstance(search_ret, Document) and search_ret:
-                resources.append(search_ret)
-                yield AISearchSSE.resources(search_ret.model_dump_json(exclude_none=True))
+        resources.extend(searchapi_resources)
+        resources.extend(x_resources)
 
         related_questions_task = asyncio.create_task(
             self._gen_related_questions(user_input=user_input, resources=resources))
 
-        answer = ""
-
+        searchapi_answer = ""
         async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
-                                                                   resources=resources, )):
-            answer += chunk
-            yield AISearchSSE.answer(chunk)
+                                                                   resources=searchapi_resources, )):
+            searchapi_answer += chunk
+            yield AISearchSSE.google_answer(chunk)
+
+        x_answer = ""
+        async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
+                                                                   resources=x_resources, )):
+            x_answer += chunk
+            yield AISearchSSE.x_answer(chunk)
 
         related_questions = await related_questions_task
         yield AISearchSSE.related_questions(related_questions.questions)
 
-        mindmap = await TreeMindMapEchartOp().predict(EChartOpReq(text=answer))
-        if isinstance(mindmap, EChartOpResp):
-            yield AISearchSSE.echarts(mindmap.options)
+        google_mindmap = await TreeMindMapEchartOp().predict(EChartOpReq(text=searchapi_answer))
+        if isinstance(google_mindmap, EChartOpResp):
+            yield AISearchSSE.google_echarts_mindmap(google_mindmap.options)
+
+        x_m = await XmindMapOp().predict(XmindMapReq(resources=select_evenly_spaced_elements(x_resources, 10)))
+        if isinstance(x_m, TwitterSummaryResp):
+            x_mindmap = f"# {user_input}\n\n"
+            for s in x_m.summaries:
+                x_mindmap += f"- {s.twitter_user_name} : {s.content_summary}\n\n"
+            yield AISearchSSE.x_markmap_mindmap(x_mindmap)
 
         yield AISearchSSE.end()
 
@@ -105,6 +127,3 @@ class AISearchAgent(object):
 
     async def _gen_related_questions(self, user_input: str, resources) -> Questions:
         return await RelatedQuestionsOp().predict(RelatedQuestionsReq(user_input=user_input, resources=resources))
-
-
-SearchApiOp
