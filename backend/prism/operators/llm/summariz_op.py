@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,9 @@ You are a helpful assistant. Please summarize the webpage content provided by th
 - Provide in-depth explanations for key areas, key technologies, and key logical relationships
 - If there is any data information, perform data analysis
 - To summarize everyone's posts on the webpage content
-- The summary should be as detailed as possible, with more than 300 words.
+- replylist refers to all replies, including for each reply: username and reply.
+- replypoints is an array of key words representing opinions or dislikes extracted from the replylist, not full sentences, e.g., ["good", "bad", "ugly"].
+- The summary should be as detailed as possible, with near 200 words.
 
 The webpage content is as follows:
 
@@ -25,22 +27,29 @@ class Summarize(BaseModel):
     """
     Summarize
     """
-    summary: str = Field(..., title="Summary")
-    key_points: List[str] = Field(..., title="KeyPoints")
+    summary: str = Field(..., description="Summary")
+    key_points: List[str] = Field(..., description="KeyPoints")
+
+
+class Reply(BaseModel):
+    username: str = Field(..., description="Username")
+    reply: str = Field(..., description="Reply")
 
 
 class Post(BaseModel):
     """
     Post
     """
-    username: str = Field(..., title="Username")
-    summarize: Summarize = Field(..., title="Summarize")
-    posttime: str = Field(..., title="Posttime. YYYY-MM-DDTHH:MM:SSZ")
+    username: str = Field(..., description="Username")
+    summarize: Summarize = Field(..., description="Summarize")
+    posttime: str = Field(..., description="Posttime. YYYY-MM-DD")
+    replylist: Optional[List[str]] = Field(default_factory=list, description="Replylist")
+    replypoints: Optional[List[str]] = Field(default_factory=list, description="Replypoints")
 
 
 class SummaryResp(BaseModel):
     """
-    SummaryResp
+    Post Summary Resp
     """
     summaries: List[Post] = Field(default_factory=list, description="Summaries List")
 
