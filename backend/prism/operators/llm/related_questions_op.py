@@ -13,6 +13,7 @@ You are a helpful assistant. Your task is to propose relevant questions based on
 - Make full use of the context information
 - Generate 3 relevant questions
 - Each relevant question should not exceed 20 words
+- The output should be in English.
 
 ## Below is a set of context
 

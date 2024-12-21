@@ -7,6 +7,9 @@ from prism.operators.llm import LLMPredictOp, UserInputReq, BaseModelInput
 DEFAULT_HUMAN_PROMPT = """\
 Your task is to rewrite the user input into [1, 3] queries suitable for search engines.
 
+## Requirements
+- The output should be in English.
+
 user input: {user_input}
 
 Queries:\

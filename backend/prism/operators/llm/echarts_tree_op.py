@@ -9,6 +9,9 @@ from prism.operators.llm import EChartOp, EChartOpReq
 DEFAULT_HUMAN_PROMPT = """\
 You are a helpful assistant. Your task is to extract structured data from the text needed to create a tree-shaped mind map.
 
+## Requirements
+- The output should be in English.
+
 The text is as follows:
 
 {text}\
