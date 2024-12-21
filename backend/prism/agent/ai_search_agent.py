@@ -3,6 +3,7 @@ from typing import AsyncGenerator, List
 
 from langchain_core.documents import Document
 
+from prism.common.codec import jsondumps
 from prism.operators.llm import UserInputReq, EChartOpReq, EChartOpResp
 from prism.operators.llm.echarts_tree_op import TreeMindMapEchartOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
@@ -16,7 +17,7 @@ class AISearchSSE:
 
     @staticmethod
     def query_rewriting(data: list[str]):
-        return {"event": "query_rewriting", "data": data}
+        return {"event": "query_rewriting", "data": jsondumps(data)}
 
     @staticmethod
     def resources(json_str: str):
@@ -29,7 +30,7 @@ class AISearchSSE:
 
     @staticmethod
     def related_questions(data: list[str]):
-        return {"event": "related_questions", "data": data}
+        return {"event": "related_questions", "data": jsondumps(data)}
 
     @staticmethod
     def echarts(data: str):

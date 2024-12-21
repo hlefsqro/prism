@@ -12,7 +12,7 @@ You are a helpful assistant. Please summarize the webpage content provided by th
 - The output should be in English
 - Provide in-depth explanations for key areas, key technologies, and key logical relationships
 - If there is any data information, perform data analysis
-- 
+- To summarize everyone's posts on the webpage content
 - The summary should be as detailed as possible, with more than 300 words.
 
 The webpage content is as follows:
