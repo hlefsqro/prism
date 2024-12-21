@@ -10,6 +10,7 @@ from prism.common.log import Log
 from prism.common.otel import Otel, OtelFastAPI
 from prism.routers import exception_handler
 from prism.routers.ai_search import ai_search_router
+from prism.routers.chat import chat_router
 from prism.routers.route_probe import probe_router
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ async def lifespan(app: fastapi.FastAPI):
 
 
 app = fastapi.FastAPI(docs_url=None, redoc_url=None, title=SETTINGS.APP_NAME, lifespan=lifespan)
-[app.include_router(router) for router in [probe_router, ai_search_router]]
+[app.include_router(router) for router in [probe_router, ai_search_router, chat_router]]
 
 
 @app.exception_handler(Exception)

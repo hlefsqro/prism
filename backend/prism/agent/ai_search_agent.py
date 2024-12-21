@@ -82,7 +82,7 @@ class AISearchAgent(object):
 
         answer = ""
 
-        async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input="介绍特朗普",
+        async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
                                                                    resources=resources, )):
             answer += chunk
             yield AISearchSSE.answer(chunk)
