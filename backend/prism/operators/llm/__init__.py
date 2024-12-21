@@ -19,7 +19,6 @@ LLmOutput = TypeVar("LLmOutput", covariant=True)
 class LLMPredictOp(ABC, BaseModel):
     llm_output_model: type[BaseModel] | str = str
     default_human_prompt: str = "",
-    image_url: Optional[str] = None,
 
     class Config:
         arbitrary_types_allowed = True
@@ -50,13 +49,19 @@ class LLMPredictOp(ABC, BaseModel):
         return input
 
     async def _llm(self, input: BaseModelInput) -> Optional[LLmOutput]:
+
+        input_dict = input.model_dump()
+
         chain = create_simple_chain(default_human_prompt=self.default_human_prompt,
-                                    llm_output_model=self.llm_output_model, )
-        return await chain.ainvoke(input.model_dump())
+                                    llm_output_model=self.llm_output_model,
+                                    image_url=input_dict.get("image_url", None), )
+        return await chain.ainvoke(input_dict)
 
     async def _llm_stream(self, input: BaseModelInput) -> AsyncGenerator:
-        chain = create_simple_chain(default_human_prompt=self.default_human_prompt)
-        async for chunk in chain.astream(input.model_dump()):
+        input_dict = input.model_dump()
+        chain = create_simple_chain(default_human_prompt=self.default_human_prompt,
+                                    image_url=input_dict.get("image_url", None), )
+        async for chunk in chain.astream(input_dict):
             yield chunk
 
     async def _post_process(self, input: BaseModelInput, llm_output: Optional[LLmOutput]) -> Optional[LLmOutput]:

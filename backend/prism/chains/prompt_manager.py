@@ -8,22 +8,23 @@ def get_chat_prompt(default_human_prompt,
     system = default_system_prompt
     human = default_human_prompt
 
+    messages = []
+
+    if system:
+        messages.append(SystemMessage(content=system))
+
     human_message = HumanMessagePromptTemplate.from_template(human)
+    messages.append(human_message)
 
-    if system is None:
-        return ChatPromptTemplate.from_messages([human_message])
+    if image_url:
+        img_messag = HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image_url},
+                },
+            ]
+        )
+        messages.append(img_messag)
 
-    system_message = SystemMessage(content=system)
-
-    if image_url is None:
-        return ChatPromptTemplate.from_messages([system_message, human_message])
-
-    img_messag = HumanMessage(
-        content=[
-            {
-                "type": "image_url",
-                "image_url": {"url": image_url},
-            },
-        ]
-    )
-    return ChatPromptTemplate.from_messages([system_message, human_message, img_messag])
+    return ChatPromptTemplate.from_messages(messages)
