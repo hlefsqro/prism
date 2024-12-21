@@ -10,5 +10,5 @@ chat_router = APIRouter()
                   response_model=RestResponse[SummaryResp])
 async def summariz(req: SummaryReq):
     """"""
-    ret = await SummarizOp().predict(SummaryReq(user_input=req.content))
+    ret = await SummarizOp().predict(req)
     return RestResponse(data=ret)
