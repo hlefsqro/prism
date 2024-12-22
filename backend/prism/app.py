@@ -35,7 +35,6 @@ async def default_exception_handler(request: fastapi.Request, exc):
 if __name__ == "__main__":
     Log.init()
     Otel.init()
-    OtelFastAPI.init(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -44,5 +43,6 @@ if __name__ == "__main__":
         allow_headers=["*"],
     )
     app.add_middleware(LogMiddleware)
+    OtelFastAPI.init(app)
 
     uvicorn.run(app, host=SETTINGS.HOST, port=SETTINGS.PORT, log_level="warning")
