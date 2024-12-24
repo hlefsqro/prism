@@ -64,15 +64,15 @@ class AISearchAgent(object):
         yield AISearchSSE.query_rewriting(search_querys)
 
         x_search_tasks = [self._x_search_single_query(query) for query in search_querys]
-        searchapi_search_tasks = [self._searchapi_search_single_query(query) for query in search_querys]
+        # searchapi_search_tasks = [self._searchapi_search_single_query(query) for query in search_querys]
 
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
-        searchapi_search_results = await asyncio.gather(*searchapi_search_tasks, return_exceptions=True)
+        # searchapi_search_results = await asyncio.gather(*searchapi_search_tasks, return_exceptions=True)
 
-        searchapi_resources: List[Document] = []
-        for search_result in searchapi_search_results:
-            if isinstance(search_result, Document):
-                searchapi_resources.append(search_result)
+        # searchapi_resources: List[Document] = []
+        # for search_result in searchapi_search_results:
+        #     if isinstance(search_result, Document):
+        #         searchapi_resources.append(search_result)
 
         x_resources: List[Document] = []
         for search_result in x_search_results:
@@ -82,17 +82,17 @@ class AISearchAgent(object):
                         x_resources.append(x)
 
         resources: List[Document] = []
-        resources.extend(searchapi_resources)
+        # resources.extend(searchapi_resources)
         resources.extend(x_resources)
 
         related_questions_task = asyncio.create_task(
             self._gen_related_questions(user_input=user_input, resources=resources))
 
-        searchapi_answer = ""
-        async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
-                                                                   resources=searchapi_resources, )):
-            searchapi_answer += chunk
-            yield AISearchSSE.google_answer(chunk)
+        # searchapi_answer = ""
+        # async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
+        #                                                            resources=searchapi_resources, )):
+        #     searchapi_answer += chunk
+        #     yield AISearchSSE.google_answer(chunk)
 
         x_answer = ""
         async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
@@ -103,18 +103,18 @@ class AISearchAgent(object):
         related_questions = await related_questions_task
         yield AISearchSSE.related_questions(related_questions.questions)
 
-        google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
+        # google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
         x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
 
-        google_mindmap = await google_mindmap_task
+        # google_mindmap = await google_mindmap_task
         x_mindmap = await x_mindmap_task
 
         mindmap = f"# {org_user_input}\n\n"
-        if isinstance(google_mindmap, TreeMindmap):
-            mindmap += f"## Web Search\n\n"
-            mindmap += google_mindmap.to_markdown()
-
-            mindmap += "\n\n"
+        # if isinstance(google_mindmap, TreeMindmap):
+        #     mindmap += f"## Web Search\n\n"
+        #     mindmap += google_mindmap.to_markdown()
+        #
+        #     mindmap += "\n\n"
         if isinstance(x_mindmap, TwitterSummaryResp):
             mindmap += f"## X\n\n"
             for s in x_mindmap.summaries:

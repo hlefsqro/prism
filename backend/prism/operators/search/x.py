@@ -24,7 +24,7 @@ class XSearchOp(SearchOp):
         query_params = {
             'query': input.query,
             'max_results': input.max_results,
-            'tweet.fields': 'created_at',
+            'tweet.fields': 'created_at,public_metrics',
         }
 
         # query_params = {

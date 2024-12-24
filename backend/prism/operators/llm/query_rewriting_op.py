@@ -5,7 +5,7 @@ from pydantic import Field, BaseModel
 from prism.operators.llm import LLMPredictOp, UserInputReq, BaseModelInput
 
 DEFAULT_HUMAN_PROMPT = """\
-Your task is to rewrite the user input into [1, 3] queries suitable for search engines.
+Your task is to rewrite the user input into [1, 3] queries suitable for search engines to help users analyze relevant virtual currency market conditions.
 
 ## Requirements
 - The output should be in English.
