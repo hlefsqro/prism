@@ -6,13 +6,13 @@ from langchain_core.documents import Document
 from prism.common.codec import jsondumps
 from prism.common.utils import select_evenly_spaced_elements
 from prism.operators.llm import UserInputReq, EChartOpReq
-from prism.operators.llm.google_mindmap_op import GoogleMindMapOp, TreeMindmap
+from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
 from prism.operators.llm.search_answer_op import SearchAnswerOp, SearchAnswerReq
 from prism.operators.llm.x_mindmap_op import XmindMapOp, XmindMapReq, TwitterSummaryResp
 from prism.operators.search.searchapi import SearchApiOp, SearchApiReq
-from prism.operators.search.x import XSearchOp, XSearchReq
+from prism.operators.search.x import XSearchOp, XSearchReq, Media
 
 
 class AISearchSSE:
@@ -22,8 +22,14 @@ class AISearchSSE:
         return {"event": "query_rewriting", "data": jsondumps(data)}
 
     @staticmethod
-    def resources(json_str: str):
-        return {"event": "resources", "data": json_str}
+    def resources(data):
+        list_r = []
+        if data and isinstance(data, list):
+            for d in data:
+                if isinstance(d, Document):
+                    list_r.append(d.model_dump())
+
+        return {"event": "resources", "data": jsondumps(list_r)}
 
     @staticmethod
     def google_answer(data: str):
@@ -42,6 +48,10 @@ class AISearchSSE:
     @staticmethod
     def mindmap(data: str):
         return {"event": "mindmap", "data": data}
+
+    @staticmethod
+    def images(data):
+        return {"event": "images", "data": jsondumps(data)}
 
     @staticmethod
     def end():
@@ -75,15 +85,21 @@ class AISearchAgent(object):
         #         searchapi_resources.append(search_result)
 
         x_resources: List[Document] = []
+        images: List[Media] = []
+
         for search_result in x_search_results:
             if isinstance(search_result, list):
                 for x in search_result:
                     if isinstance(x, Document):
                         x_resources.append(x)
+                    elif isinstance(x, Media):
+                        images.append(x.model_dump())
 
         resources: List[Document] = []
         # resources.extend(searchapi_resources)
         resources.extend(x_resources)
+
+        yield AISearchSSE.resources(resources)
 
         related_questions_task = asyncio.create_task(
             self._gen_related_questions(user_input=user_input, resources=resources))
@@ -99,6 +115,8 @@ class AISearchAgent(object):
                                                                    resources=x_resources, )):
             x_answer += chunk
             yield AISearchSSE.x_answer(chunk)
+
+        yield AISearchSSE.images(images)
 
         related_questions = await related_questions_task
         yield AISearchSSE.related_questions(related_questions.questions)

@@ -13,9 +13,14 @@ class XSearchReq(BaseModel):
     max_results: int = 10
 
 
+class Media(BaseModel):
+    type: str
+    preview_image_url: str
+
+
 class XSearchOp(SearchOp):
 
-    async def search(self, input: XSearchReq) -> Optional[List[Document]]:
+    async def search(self, input: XSearchReq) -> Optional[List[Document | Media]]:
         headers = {
             'Authorization': f'Bearer {SETTINGS.X_BEARER_TOKEN}'
         }
@@ -25,6 +30,8 @@ class XSearchOp(SearchOp):
             'query': input.query,
             'max_results': input.max_results,
             'tweet.fields': 'created_at,public_metrics',
+            'expansions': 'attachments.media_keys',
+            'media.fields': 'url,preview_image_url',
         }
 
         # query_params = {
@@ -54,5 +61,14 @@ class XSearchOp(SearchOp):
                             metadata=metadata,
                         )
                         ret.append(doc)
+
+                if tweets.get('includes', None):
+                    includes = tweets.get('includes')
+                    media = includes.get('media', [])
+                    for media in media:
+                        media_preview_image_url = media.get("preview_image_url", None)
+                        media_type = media.get("type", None)
+                        if media_preview_image_url and media_type:
+                            ret.append(Media(type=media_type, preview_image_url=media_preview_image_url))
 
         return ret

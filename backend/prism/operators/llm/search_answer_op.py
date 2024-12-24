@@ -6,25 +6,27 @@ from pydantic import BaseModel, computed_field
 from prism.operators.llm import LLMPredictOp
 
 DEFAULT_HUMAN_PROMPT = """\
-You are a helpful AI analyze assistant. Your task is to analyze the questions asked by users based on the context.
+You are a helpful AI analyze assistant. Your task is to analyze the user's question based on the context.
 
 ## Requirements
-- Make full use of context information, but don't blindly repeat the context verbatim
+- You should repeatedly understand the context and think and analyze why this context causes the user's question, but don't blindly repeat the context verbatim
 - You should first summarize the conclusions of your analysis
-- Then list the key point of each user in the context related to the question
+- You should analyze key points from multiple angles
+- You need to leverage data in context
+- You are an expert in analysis. The output is what you think after learning the context. Don't emphasize that it comes from the context.
 - The output should be markdown
 - The output should be in English
 
 <Output format>
 
-## summary
+## **Summary**
 
 ... ...
 
-## key points
+## **Key Points**
 
-- **A**: User A's key point
-- **B**: User B's key point
+- **Point A**: key point A details
+- **Point B**: key point B details
 ... ...
 
 </Output format>

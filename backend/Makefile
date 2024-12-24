@@ -1,4 +1,4 @@
-IMAGE_NAME := prismpro2024/prism-be-x86:7
+IMAGE_NAME := prismpro2024/prism-be-x86:10
 
 run_app:
 	poetry run python -m prism.app
