@@ -22,6 +22,6 @@ async def chat(req: ChatReq):
     return StreamingResponse(ChatOp().stream(input=req), media_type="text/event-stream")
 
 
-@chat_router.get("/api/prism/ai/image/chat")
+@chat_router.post("/api/prism/ai/image/chat")
 async def image_chat(req: ImageReq):
     return StreamingResponse(ImageAnswerOp().stream(input=req), media_type="text/event-stream")
