@@ -7,10 +7,14 @@ from pydantic import BaseModel
 from prism.common.config import SETTINGS
 from prism.operators.search import SearchOp
 
+def sort_by_verified(docs: List[Document]) -> List[Document]:
+    document_docs = [doc for doc in docs if isinstance(doc, Document)]
+    sorted_document_docs = sorted(document_docs, key=lambda doc: not doc.metadata['verified'])
+    return sorted_document_docs
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 10
+    max_results: int = 30
 
 
 class Media(BaseModel):
@@ -29,9 +33,10 @@ class XSearchOp(SearchOp):
         query_params = {
             'query': input.query,
             'max_results': input.max_results,
-            'tweet.fields': 'created_at,public_metrics',
-            'expansions': 'attachments.media_keys',
+            'tweet.fields': 'created_at,public_metrics,author_id',
+            'expansions': 'attachments.media_keys,author_id',
             'media.fields': 'url,preview_image_url',
+            'user.fields': 'name,profile_image_url,verified,verified_type',
         }
 
         # query_params = {
@@ -49,13 +54,28 @@ class XSearchOp(SearchOp):
                 response.raise_for_status()
                 tweets = await response.json()
 
+                users_dict = {}
+                if tweets.get('includes', None):
+                    includes = tweets.get('includes')
+                    users = includes.get('users', [])
+                    for user in users:
+                        users_dict[user["id"]] = user
+
                 if tweets.get('data', None):
                     for tweet in tweets['data']:
+                        author_info = users_dict.get(tweet.get("author_id", ""), {})
+
                         metadata = {
+                            "content": tweet["text"],
                             "created_at": tweet.get("created_at", ""),
                             "query": input.query,
-                            "site": "x"
+                            "site": "x",
+                            "verified": author_info.get("verified", False),
+                            "username": author_info.get("username", ""),
+                            "profile_image_url": author_info.get("profile_image_url", ""),
+                            "verified_type": author_info.get("verified_type", ""),
                         }
+
                         doc = Document(
                             page_content=tweet["text"],
                             metadata=metadata,
@@ -71,4 +91,4 @@ class XSearchOp(SearchOp):
                         if media_preview_image_url and media_type:
                             ret.append(Media(type=media_type, preview_image_url=media_preview_image_url))
 
-        return ret
+        return sort_by_verified(ret)

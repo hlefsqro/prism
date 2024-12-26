@@ -22,14 +22,14 @@ class AISearchSSE:
         return {"event": "query_rewriting", "data": jsondumps(data)}
 
     @staticmethod
-    def resources(data):
+    def x_posts(data):
         list_r = []
         if data and isinstance(data, list):
             for d in data:
                 if isinstance(d, Document):
-                    list_r.append(d.model_dump())
+                    list_r.append(d.metadata)
 
-        return {"event": "resources", "data": jsondumps(list_r)}
+        return {"event": "x_posts", "data": jsondumps(list_r)}
 
     @staticmethod
     def google_answer(data: str):
@@ -73,7 +73,7 @@ class AISearchAgent(object):
         search_querys = list(search_querys)
         yield AISearchSSE.query_rewriting(search_querys)
 
-        x_search_tasks = [self._x_search_single_query(query) for query in search_querys]
+        x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
         # searchapi_search_tasks = [self._searchapi_search_single_query(query) for query in search_querys]
 
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
@@ -99,7 +99,7 @@ class AISearchAgent(object):
         # resources.extend(searchapi_resources)
         resources.extend(x_resources)
 
-        yield AISearchSSE.resources(resources)
+        yield AISearchSSE.x_posts(resources)
 
         related_questions_task = asyncio.create_task(
             self._gen_related_questions(user_input=user_input, resources=resources))

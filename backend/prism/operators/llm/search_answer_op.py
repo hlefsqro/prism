@@ -6,14 +6,17 @@ from pydantic import BaseModel, computed_field
 from prism.operators.llm import LLMPredictOp
 
 DEFAULT_HUMAN_PROMPT = """\
-You are a helpful AI analyze assistant. Your task is to analyze the user's question based on the context.
+You are a helpful AI analyze assistant. Your task is to analyze the question based on the context.
+
+## Steps
+1. Analyze the tweets in context one by one, and summarize their key point if the tweets are related to the question
+2. Filter out irrelevant key point
+3. Merge and sort all key point, key point held by more users are ranked first, and it is necessary to keep which users have the same key point.
+4. Summarize the conclusions of your analysis
 
 ## Requirements
-- You should repeatedly understand the context and think and analyze why this context causes the user's question, but don't blindly repeat the context verbatim
-- You should first summarize the conclusions of your analysis
-- You should analyze key points from multiple angles
-- You need to leverage data in context
-- You are an expert in analysis. The output is what you think after learning the context. Don't emphasize that it comes from the context.
+- Do not make up users’ key point
+- All key point can be said to come from a user or yourself, but not from the context
 - The output should be markdown
 - The output should be in English
 
@@ -25,8 +28,10 @@ You are a helpful AI analyze assistant. Your task is to analyze the user's quest
 
 ## **Key Points**
 
-- **Point A**: key point A details
-- **Point B**: key point B details
+- **Point 1**: ... ...
+
+- **Point 2**: .. ...
+
 ... ...
 
 </Output format>
@@ -35,7 +40,7 @@ You are a helpful AI analyze assistant. Your task is to analyze the user's quest
 
 {context}
 
-## Below is the user’s question
+## Below is the question
 
 {user_input}\
 """
@@ -66,14 +71,16 @@ class SearchAnswerReq(BaseModel):
     @property
     def context(self) -> str:
         if not self.resources:
-            return "No relevant context was found. Please use your knowledge to answer the user's question."
+            return "No relevant context was found. Please use your knowledge to answer the question."
 
         context = ""
         for doc in self.resources:
             if doc.page_content:
-                context += f"{doc.page_content}"
+                context += f"{doc.page_content}\n"
                 if doc.metadata.get('created_at'):
                     context += f"created_at \n{doc.metadata.get('created_at')}"
+                if doc.metadata.get('username'):
+                    context += f"username \n{doc.metadata.get('username')}"
                 context += "\n\n"
         return context
 
