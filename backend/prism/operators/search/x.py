@@ -7,10 +7,12 @@ from pydantic import BaseModel
 from prism.common.config import SETTINGS
 from prism.operators.search import SearchOp
 
+
 def sort_by_verified(docs: List[Document]) -> List[Document]:
     document_docs = [doc for doc in docs if isinstance(doc, Document)]
     sorted_document_docs = sorted(document_docs, key=lambda doc: not doc.metadata['verified'])
     return sorted_document_docs
+
 
 class XSearchReq(BaseModel):
     query: str
@@ -82,6 +84,8 @@ class XSearchOp(SearchOp):
                         )
                         ret.append(doc)
 
+                ret = sort_by_verified(ret)
+
                 if tweets.get('includes', None):
                     includes = tweets.get('includes')
                     media = includes.get('media', [])
@@ -91,4 +95,4 @@ class XSearchOp(SearchOp):
                         if media_preview_image_url and media_type:
                             ret.append(Media(type=media_type, preview_image_url=media_preview_image_url))
 
-        return sort_by_verified(ret)
+        return ret
