@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from typing import Optional, List
 
 import aiohttp
+import pytz
 from langchain_core.documents import Document
 from pydantic import BaseModel
 
@@ -8,15 +10,44 @@ from prism.common.config import SETTINGS
 from prism.operators.search import SearchOp
 
 
-def sort_by_verified(docs: List[Document]) -> List[Document]:
-    document_docs = [doc for doc in docs if isinstance(doc, Document)]
-    sorted_document_docs = sorted(document_docs, key=lambda doc: not doc.metadata['verified'])
-    return sorted_document_docs
+def calculate_rank(public_metrics: dict) -> float:
+    weights = {
+        'retweet_count': 20,
+        'reply_count': 10,
+        'like_count': 10,
+        'quote_count': 3,
+        'bookmark_count': 2,
+        'impression_count': 1
+    }
+
+    rank = 0
+    for key, weight in weights.items():
+        rank += public_metrics.get(key, 0) * weight
+
+    return rank
+
+
+def sort_documents(docs: List[Document]) -> List[Document]:
+    docs.sort(key=lambda doc: doc.metadata.get("rank", 0), reverse=True)
+    return docs
+
+
+def group_and_sort_documents(docs: List[Document]) -> List[Document]:
+    blue_docs = [doc for doc in docs if doc.metadata.get("verified_type") == "blue"]
+    other_docs = [doc for doc in docs if doc.metadata.get("verified_type") != "blue"]
+
+    sorted_blue_docs = sort_documents(blue_docs)
+    if len(sorted_blue_docs) > 10:
+        return sorted_blue_docs[:10]
+
+    sorted_other_docs = sort_documents(other_docs)
+    combined_docs = sorted_blue_docs + sorted_other_docs
+    return combined_docs[:10]
 
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 30
+    max_results: int = 100
 
 
 class Media(BaseModel):
@@ -31,8 +62,13 @@ class XSearchOp(SearchOp):
             'Authorization': f'Bearer {SETTINGS.X_BEARER_TOKEN}'
         }
 
+        now = datetime.now(pytz.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        start_time = six_hours_ago.isoformat()
+
         search_url = "https://api.twitter.com/2/tweets/search/recent"
         query_params = {
+            'start_time': start_time,
             'query': input.query,
             'max_results': input.max_results,
             'tweet.fields': 'created_at,public_metrics,author_id',
@@ -40,14 +76,6 @@ class XSearchOp(SearchOp):
             'media.fields': 'url,preview_image_url',
             'user.fields': 'name,profile_image_url,verified,verified_type',
         }
-
-        # query_params = {
-        #     'query': input.query,
-        #     'max_results': input.max_results,
-        #     'expansions': 'attachments.media_keys',
-        #     'tweet.fields': 'created_at',
-        #     'media.fields': 'url,type,preview_image_url'
-        # }
 
         ret = []
 
@@ -92,6 +120,7 @@ class XSearchOp(SearchOp):
                             "profile_image_url": author_info.get("profile_image_url", ""),
                             "verified_type": author_info.get("verified_type", ""),
                             "public_metrics": tweet.get("public_metrics", {}),
+                            "rank": calculate_rank(tweet.get("public_metrics", {})),
                             "media_image_urls": media_image_urls,
                         }
 
@@ -101,7 +130,7 @@ class XSearchOp(SearchOp):
                         )
                         ret.append(doc)
 
-                ret = sort_by_verified(ret)
+                ret = group_and_sort_documents(ret)
 
                 if tweets.get('includes', None):
                     includes = tweets.get('includes')

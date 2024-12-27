@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     X_BEARER_TOKEN: Optional[str] = None
     SEARCHAPI_API_KEY: Optional[str] = None
     API_KEYS: List[str] = Field(default_factory=list)
+    CMC_PRO_API_KEY: Optional[str] = None
 
     @field_validator('API_KEYS', mode='before')
     def validator_api_keys(cls, v):
