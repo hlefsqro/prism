@@ -63,9 +63,24 @@ class XSearchOp(SearchOp):
                     for user in users:
                         users_dict[user["id"]] = user
 
+                media_dict = {}
+                if tweets.get('includes', None):
+                    includes = tweets.get('includes')
+                    medias = includes.get('media', [])
+                    for media in medias:
+                        media_dict[media['media_key']] = media
+
                 if tweets.get('data', None):
                     for tweet in tweets['data']:
                         author_info = users_dict.get(tweet.get("author_id", ""), {})
+
+                        media_image_urls = []
+                        media_keys = tweet.get('attachments', {}).get('media_keys', [])
+                        for media_key in media_keys:
+                            media_info = media_dict.get(media_key, {})
+                            media_image_url = media_info.get('preview_image_url', "")
+                            if media_image_url:
+                                media_image_urls.append(media_image_url)
 
                         metadata = {
                             "content": tweet["text"],
@@ -76,6 +91,8 @@ class XSearchOp(SearchOp):
                             "username": author_info.get("username", ""),
                             "profile_image_url": author_info.get("profile_image_url", ""),
                             "verified_type": author_info.get("verified_type", ""),
+                            "public_metrics": tweet.get("public_metrics", {}),
+                            "media_image_urls": media_image_urls,
                         }
 
                         doc = Document(
