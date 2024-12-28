@@ -36,7 +36,7 @@ class CmcOp(ABC, BaseModel):
 
     async def _to_params(self, input: BaseModelInput) -> Optional[Any]:
         if input:
-            return input.model_dump()
+            return input.model_dump(exclude_none=True)
         return None
 
     @abstractmethod
