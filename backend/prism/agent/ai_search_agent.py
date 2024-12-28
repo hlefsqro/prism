@@ -135,7 +135,9 @@ class AISearchAgent(object):
         # resources.extend(searchapi_resources)
         resources.extend(x_resources)
 
-        x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
+        x_mindmap_task = None
+        if x_resources:
+            x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
 
         yield AISearchSSE.x_posts(resources)
 
@@ -170,20 +172,15 @@ class AISearchAgent(object):
         # google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
 
         # google_mindmap = await google_mindmap_task
-        x_mindmap = await x_mindmap_task
+        if x_mindmap_task:
+            x_mindmap = await x_mindmap_task
 
-        mindmap = f"# {org_user_input}\n\n"
-        # if isinstance(google_mindmap, TreeMindmap):
-        #     mindmap += f"## Web Search\n\n"
-        #     mindmap += google_mindmap.to_markdown()
-        #
-        #     mindmap += "\n\n"
-        if isinstance(x_mindmap, TwitterSummaryResp):
-            mindmap += f"## X\n\n"
-            for s in x_mindmap.summaries:
-                mindmap += f"- {s.twitter_user_name} : {s.content_summary}\n\n"
+            if isinstance(x_mindmap, TwitterSummaryResp):
+                mindmap = f"# X\n\n"
+                for s in x_mindmap.summaries:
+                    mindmap += f"- {s.twitter_user_name} : {s.content_summary}\n\n"
 
-        yield AISearchSSE.mindmap(mindmap)
+                yield AISearchSSE.mindmap(mindmap)
 
         yield AISearchSSE.end()
 
