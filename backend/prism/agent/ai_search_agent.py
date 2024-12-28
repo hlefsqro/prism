@@ -9,6 +9,7 @@ from prism.common.codec import jsondumps
 from prism.common.utils import select_evenly_spaced_elements
 from prism.operators.cmc.get_cmc_historical import GetCryptoHistoricalReq, GetCryptoHistorical
 from prism.operators.cmc.get_cmc_latest import GetCryptoLatest, GetCryptoLatestReq
+from prism.operators.cmc.get_cmc_score import get_token_transaction_growth
 from prism.operators.llm import UserInputReq, EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
@@ -78,8 +79,12 @@ class AISearchSSE:
         return {"event": "crypto_historical", "data": jsondumps(crypto_latest)}
 
     @staticmethod
-    def query_score(query_score):
-        return {"event": "query_score", "data": query_score}
+    def x_query_growth_score(query_score):
+        return {"event": "x_query_growth_score", "data": query_score}
+
+    @staticmethod
+    def token_transaction_growth(growth):
+        return {"event": "token_transaction_growth", "data": growth}
 
 
 class AISearchAgent(object):
@@ -101,10 +106,14 @@ class AISearchAgent(object):
         x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
 
         crypto = await crypto_task
+
+        get_token_transaction_growth_task = None
         if isinstance(crypto, CmcCrypto):
             yield AISearchSSE.crypto(crypto.model_dump())
             get_crypto_latest_task = asyncio.create_task(self._get_crypto_latest(crypto.id))
             get_crypto_historical_task = asyncio.create_task(self._get_crypto_historical(crypto.id))
+            get_token_transaction_growth_task = asyncio.create_task(
+                get_token_transaction_growth(crypto.ca, crypto.platform))
 
             yield AISearchSSE.crypto_latest(await get_crypto_latest_task)
             yield AISearchSSE.crypto_historical(await get_crypto_historical_task)
@@ -151,7 +160,12 @@ class AISearchAgent(object):
         yield AISearchSSE.related_questions(related_questions.questions)
 
         query_score = await query_score_task
-        yield AISearchSSE.query_score(query_score)
+        yield AISearchSSE.x_query_growth_score(query_score)
+
+        if get_token_transaction_growth_task:
+            token_transaction_growth = await get_token_transaction_growth_task
+            if token_transaction_growth:
+                yield AISearchSSE.token_transaction_growth(token_transaction_growth)
 
         # google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
 

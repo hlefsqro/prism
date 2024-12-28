@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, List
 
@@ -8,6 +9,8 @@ from pydantic import BaseModel
 
 from prism.common.config import SETTINGS
 from prism.operators.search import SearchOp
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_rank(public_metrics: dict) -> float:
@@ -47,7 +50,7 @@ def group_and_sort_documents(docs: List[Document]) -> List[Document]:
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 100
+    max_results: int = 30
 
 
 class Media(BaseModel):
@@ -81,6 +84,10 @@ class XSearchOp(SearchOp):
 
         async with aiohttp.ClientSession() as session:
             async with session.get(search_url, headers=headers, params=query_params) as response:
+                if response.status == 429:
+                    logger.warning(
+                        f"Rate limit exceeded. X-Rate-Limit-Reset: {response.headers.get('X-Rate-Limit-Reset')}")
+                    return []
                 response.raise_for_status()
                 tweets = await response.json()
 
