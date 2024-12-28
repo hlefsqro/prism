@@ -1,10 +1,14 @@
 import asyncio
+from datetime import timedelta, datetime
 from typing import AsyncGenerator, List
 
+import pytz
 from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
 from prism.common.utils import select_evenly_spaced_elements
+from prism.operators.cmc.get_cmc_historical import GetCryptoHistoricalReq, GetCryptoHistorical
+from prism.operators.cmc.get_cmc_latest import GetCryptoLatest, GetCryptoLatestReq
 from prism.operators.llm import UserInputReq, EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
@@ -13,6 +17,8 @@ from prism.operators.llm.search_answer_op import SearchAnswerOp, SearchAnswerReq
 from prism.operators.llm.x_mindmap_op import XmindMapOp, XmindMapReq, TwitterSummaryResp
 from prism.operators.search.searchapi import SearchApiOp, SearchApiReq
 from prism.operators.search.x import XSearchOp, XSearchReq, Media
+from prism.operators.search.x_count import XCountReq, XCountOp
+from prism.repository.cmc_mapping import get_crypto_mapping, CmcCrypto
 
 
 class AISearchSSE:
@@ -37,6 +43,11 @@ class AISearchSSE:
         return {"event": "google_answer", "data": data}
 
     @staticmethod
+    def crypto(data: str):
+        """"""
+        return {"event": "crypto", "data": jsondumps(data)}
+
+    @staticmethod
     def x_answer(data: str):
         """"""
         return {"event": "x_answer", "data": data}
@@ -58,31 +69,47 @@ class AISearchSSE:
         """"""
         return {"event": "end"}
 
+    @staticmethod
+    def crypto_latest(crypto_latest):
+        return {"event": "crypto_latest", "data": jsondumps(crypto_latest)}
+
+    @staticmethod
+    def crypto_historical(crypto_latest):
+        return {"event": "crypto_historical", "data": jsondumps(crypto_latest)}
+
+    @staticmethod
+    def query_score(query_score):
+        return {"event": "query_score", "data": query_score}
+
 
 class AISearchAgent(object):
 
     async def search(self, user_input: str) -> AsyncGenerator:
         org_user_input = user_input
+
+        query_score_task = asyncio.create_task(self._get_query_score(org_user_input))
+        crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
+
         search_querys = set()
         search_querys.add(user_input)
         querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
-        if querys and querys.queries:
-            for user_input in querys.queries:
-                search_querys.add(user_input)
+        for q in (querys.queries or []):
+            search_querys.add(q)
 
-        search_querys = list(search_querys)
-        yield AISearchSSE.query_rewriting(search_querys)
+        yield AISearchSSE.query_rewriting(list(search_querys))
 
         x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
-        # searchapi_search_tasks = [self._searchapi_search_single_query(query) for query in search_querys]
+
+        crypto = await crypto_task
+        if isinstance(crypto, CmcCrypto):
+            yield AISearchSSE.crypto(crypto.model_dump())
+            get_crypto_latest_task = asyncio.create_task(self._get_crypto_latest(crypto.id))
+            get_crypto_historical_task = asyncio.create_task(self._get_crypto_historical(crypto.id))
+
+            yield AISearchSSE.crypto_latest(await get_crypto_latest_task)
+            yield AISearchSSE.crypto_historical(await get_crypto_historical_task)
 
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
-        # searchapi_search_results = await asyncio.gather(*searchapi_search_tasks, return_exceptions=True)
-
-        # searchapi_resources: List[Document] = []
-        # for search_result in searchapi_search_results:
-        #     if isinstance(search_result, Document):
-        #         searchapi_resources.append(search_result)
 
         x_resources: List[Document] = []
         images: List[Media] = []
@@ -98,6 +125,8 @@ class AISearchAgent(object):
         resources: List[Document] = []
         # resources.extend(searchapi_resources)
         resources.extend(x_resources)
+
+        x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
 
         yield AISearchSSE.x_posts(resources)
 
@@ -121,8 +150,10 @@ class AISearchAgent(object):
         related_questions = await related_questions_task
         yield AISearchSSE.related_questions(related_questions.questions)
 
+        query_score = await query_score_task
+        yield AISearchSSE.query_score(query_score)
+
         # google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
-        x_mindmap_task = asyncio.create_task(self._x_mindmap_op(x_resources=x_resources))
 
         # google_mindmap = await google_mindmap_task
         x_mindmap = await x_mindmap_task
@@ -156,3 +187,48 @@ class AISearchAgent(object):
 
     async def _gen_related_questions(self, user_input: str, resources) -> Questions:
         return await RelatedQuestionsOp().predict(RelatedQuestionsReq(user_input=user_input, resources=resources))
+
+    async def _get_crypto_latest(self, id):
+        return await GetCryptoLatest().call(GetCryptoLatestReq(id=id))
+
+    async def _get_crypto_historical(self, id):
+        now = datetime.now(pytz.utc)
+        one_hour_ago = now - timedelta(hours=1)
+        return await GetCryptoHistorical().call(GetCryptoHistoricalReq(id=str(id),
+                                                                       time_start=str(one_hour_ago),
+                                                                       time_end=str(now)))
+
+    async def _get_query_score(self, query: str):
+        try:
+            now = datetime.now(pytz.utc)
+            end_1 = (now - timedelta(minutes=30)).isoformat()
+            begin_1 = (now - timedelta(minutes=60)).isoformat()
+
+            end_2 = (now - timedelta(minutes=90)).isoformat()
+            begin_2 = (now - timedelta(minutes=120)).isoformat()
+
+            r1 = await XCountOp().search(XCountReq(query=query, start_time=begin_1, end_time=end_1))
+            r2 = await XCountOp().search(XCountReq(query=query, start_time=begin_2, end_time=end_2))
+
+            if r2 >= 100 and r1 >= 100:
+                return 3
+
+            if r2 == 0 and r1 == 0:
+                return 0
+
+            change_percentage = ((r1 - r2) / r2) * 100
+
+            if change_percentage >= 80:
+                return 5
+            elif change_percentage >= 60:
+                return 4
+            elif change_percentage >= 40:
+                return 3
+            elif change_percentage >= 20:
+                return 2
+            elif change_percentage > 0:
+                return 1
+            else:
+                return 0
+        except Exception:
+            return 0
