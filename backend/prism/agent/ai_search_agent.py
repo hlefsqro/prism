@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import timedelta, datetime
 from typing import AsyncGenerator, List
 
@@ -20,6 +21,8 @@ from prism.operators.search.searchapi import SearchApiOp, SearchApiReq
 from prism.operators.search.x import XSearchOp, XSearchReq, Media
 from prism.operators.search.x_count import XCountReq, XCountOp
 from prism.repository.cmc_mapping import get_crypto_mapping, CmcCrypto
+
+logger = logging.getLogger(__name__)
 
 
 class AISearchSSE:
@@ -96,14 +99,17 @@ class AISearchAgent(object):
         crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
         x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
 
-        search_querys = set()
-        search_querys.add(user_input)
-        querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
-        if querys:
-            for q in (querys.queries or []):
-                search_querys.add(q)
+        try:
+            search_querys = set()
+            search_querys.add(user_input)
+            querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
+            if querys:
+                for q in (querys.queries or []):
+                    search_querys.add(q)
 
-        yield AISearchSSE.query_rewriting(list(search_querys))
+            yield AISearchSSE.query_rewriting(list(search_querys))
+        except Exception as e:
+            logger.error(e)
 
         crypto = await crypto_task
 
@@ -146,11 +152,14 @@ class AISearchAgent(object):
         related_questions_task = asyncio.create_task(
             self._gen_related_questions(user_input=org_user_input, resources=resources))
 
-        x_answer = ""
-        async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
-                                                                   resources=x_resources, )):
-            x_answer += chunk
-            yield AISearchSSE.x_answer(chunk)
+        try:
+            x_answer = ""
+            async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
+                                                                       resources=x_resources, )):
+                x_answer += chunk
+                yield AISearchSSE.x_answer(chunk)
+        except Exception as e:
+            logger.error(e)
 
         yield AISearchSSE.images(images)
 
