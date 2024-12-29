@@ -94,6 +94,7 @@ class AISearchAgent(object):
 
     async def search(self, user_input: str) -> AsyncGenerator:
         org_user_input = user_input
+        logger.info('User input is %s', org_user_input)
 
         query_score_task = asyncio.create_task(self._get_query_score(org_user_input))
         crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
@@ -116,6 +117,7 @@ class AISearchAgent(object):
         get_crypto_platform_score_task = None
         get_crypto_symbol_score_task = None
         if isinstance(crypto, CmcCrypto):
+            logger.info(f"crypto is {jsondumps(crypto.model_dump())}")
             yield AISearchSSE.crypto(crypto.model_dump())
             get_crypto_latest_task = asyncio.create_task(self._get_crypto_latest(crypto.id))
             get_crypto_historical_task = asyncio.create_task(self._get_crypto_historical(crypto.id))
