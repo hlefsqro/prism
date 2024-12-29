@@ -5,6 +5,7 @@ import aiohttp
 from langchain_core.documents import Document
 from pydantic import BaseModel
 
+from prism.common.codec import jsondumps
 from prism.common.config import SETTINGS
 from prism.operators.search import SearchOp
 
@@ -106,6 +107,7 @@ class XSearchOp(SearchOp):
                     return []
                 response.raise_for_status()
                 tweets = await response.json()
+                logger.info(f"Query {input.query} Got tweets: {jsondumps(tweets)})")
 
                 users_dict = {}
                 if tweets.get('includes', None):

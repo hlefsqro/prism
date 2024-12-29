@@ -1,9 +1,12 @@
+import logging
 from typing import Optional
 
 from pydantic import BaseModel
 
+from prism.common.codec import jsonloads
 from prism.operators.cmc.get_cmc_info import GetCryptoInfoReq, GetCryptoInfo
 
+logger = logging.getLogger(__name__)
 
 class CmcCrypto(BaseModel):
     id: Optional[int] = None
@@ -21,6 +24,7 @@ async def get_crypto_mapping(key: str) -> Optional[CmcCrypto]:
     try:
         m = CMC_MAPPING.get(key, None)
         if m:
+            logger.info(f"crypto mapping keys: {list(CMC_MAPPING.keys())}")
             return m
         ret = await GetCryptoInfo().call(GetCryptoInfoReq(symbol_or_address=key))
         if ret and ret.data:
@@ -44,6 +48,8 @@ async def get_crypto_mapping(key: str) -> Optional[CmcCrypto]:
                                         rr = CmcCrypto(**item)
                                         rr.ca = ca
                                         CMC_MAPPING[ca] = rr
+        logger.info(f"crypto mapping keys: {list(CMC_MAPPING.keys())}")
         return CMC_MAPPING.get(key, None)
     except Exception as e:
+        logger.error(f"failed to get crypto mapping: {e}")
         return None

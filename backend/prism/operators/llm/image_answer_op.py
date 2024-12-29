@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Any
+from typing import AsyncIterator, Any, Optional
 
 from pydantic import BaseModel
 
@@ -35,6 +35,12 @@ You are an expert in image content analysis and summarization, skilled in provid
 - Extract all textual information fully; if there are numbers, markers, or symbols, list them one by one.  
 - If there are lines, arrows, directional indicators, or relationships between elements, provide a detailed explanation.
 
+## Image Context
+
+Below are some words near the image to help you understand the image
+
+Context: {text}
+
 ## Begin Response: Provide as much detail as possible (more than 300 words); please check and avoid infinite loops\
 """
 
@@ -44,6 +50,7 @@ class ImageReq(BaseModel):
     Queries
     """
     image_url: str
+    text: Optional[str] = ""
 
 
 class ImageAnswerOp(LLMPredictOp):
