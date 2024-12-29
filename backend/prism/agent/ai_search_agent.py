@@ -203,7 +203,11 @@ class AISearchAgent(object):
         return await XmindMapOp().predict(XmindMapReq(resources=select_evenly_spaced_elements(x_resources, 10)))
 
     async def _x_search_single_query(self, query: str):
-        return await XSearchOp().search(XSearchReq(query=query))
+        try:
+            return await XSearchOp().search(XSearchReq(query=query))
+        except Exception as e:
+            logger.error(e)
+        return []
 
     async def _searchapi_search_single_query(self, query: str):
         return await SearchApiOp().search(SearchApiReq(query=query))

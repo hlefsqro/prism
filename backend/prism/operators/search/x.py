@@ -132,6 +132,10 @@ class XSearchOp(SearchOp):
                             media_image_url = media_info.get('preview_image_url', "")
                             if media_image_url:
                                 media_image_urls.append(media_image_url)
+                            else:
+                                media_url = media_info.get('url', "")
+                                if media_url:
+                                    media_image_urls.append(media_url)
 
                         m_username = author_info.get("username", "")
                         m_x_id = tweet.get("id", "")
@@ -164,9 +168,14 @@ class XSearchOp(SearchOp):
                     includes = tweets.get('includes')
                     media = includes.get('media', [])
                     for media in media:
+                        media_type = media.get("type", "none")
+
                         media_preview_image_url = media.get("preview_image_url", None)
-                        media_type = media.get("type", None)
-                        if media_preview_image_url and media_type:
+                        if media_preview_image_url:
                             ret.append(Media(type=media_type, preview_image_url=media_preview_image_url))
+                        else:
+                            media_url = media.get("url", None)
+                            if media_url:
+                                ret.append(Media(type=media_type, preview_image_url=media_url))
 
         return ret
