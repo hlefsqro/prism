@@ -117,18 +117,23 @@ class XSearchOp(SearchOp):
                             if media_image_url:
                                 media_image_urls.append(media_image_url)
 
+                        m_username = author_info.get("username", "")
+                        m_x_id = tweet.get("id", "")
+
                         metadata = {
                             "content": tweet["text"],
                             "created_at": tweet.get("created_at", ""),
                             "query": input.query,
                             "site": "x",
                             "verified": author_info.get("verified", False),
-                            "username": author_info.get("username", ""),
+                            "username": m_username,
                             "profile_image_url": author_info.get("profile_image_url", ""),
                             "verified_type": author_info.get("verified_type", ""),
                             "public_metrics": tweet.get("public_metrics", {}),
                             "rank": calculate_rank(tweet.get("public_metrics", {})),
                             "media_image_urls": media_image_urls,
+                            "x_id": m_x_id,
+                            "x_post_url": f"https://x.com/{m_username}/status/{m_x_id}"
                         }
 
                         doc = Document(
