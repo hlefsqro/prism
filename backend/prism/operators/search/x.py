@@ -41,13 +41,13 @@ def group_and_sort_documents(docs: List[Document]) -> List[Document]:
     other_docs = [doc for doc in docs if doc.metadata.get("verified_type") != "blue"]
 
     sorted_blue_docs = sort_documents(blue_docs)
-    if len(sorted_blue_docs) > 20:
+    if len(sorted_blue_docs) > 10:
         combined_docs = sorted_blue_docs
-        result_docs = sorted_blue_docs[:20]
+        result_docs = sorted_blue_docs[:10]
     else:
         sorted_other_docs = sort_documents(other_docs)
         combined_docs = sorted_blue_docs + sorted_other_docs
-        result_docs = combined_docs[:20]
+        result_docs = combined_docs[:10]
 
     has_media_image_urls = False
     for doc in result_docs:
@@ -66,7 +66,7 @@ def group_and_sort_documents(docs: List[Document]) -> List[Document]:
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 100
+    max_results: int = 20
 
 
 class Media(BaseModel):

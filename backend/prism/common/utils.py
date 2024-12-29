@@ -61,8 +61,8 @@ def add_random(s):
     return s
 
 
-def process_score(score, offset=5, scale=10, lower_bound=0, upper_bound=100):
-    result = int((score + offset) * scale)
+def process_score(sc, offset=5, scale=10, lower_bound=0, upper_bound=100):
+    result = int((sc + offset) * scale)
     return max(lower_bound, min(result, upper_bound))
 
 
@@ -109,4 +109,5 @@ def merge_score(off_chain_score=0.0,
     except Exception as e:
         logger.error(e)
 
+    logger.info(f"final score {jsondumps(ret)}")
     return ret
