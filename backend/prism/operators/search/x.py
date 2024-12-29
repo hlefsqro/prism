@@ -1,9 +1,7 @@
 import logging
-from datetime import datetime, timedelta
 from typing import Optional, List
 
 import aiohttp
-import pytz
 from langchain_core.documents import Document
 from pydantic import BaseModel
 
@@ -15,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 def calculate_rank(public_metrics: dict) -> float:
     weights = {
-        'retweet_count': 20,
-        'reply_count': 10,
-        'like_count': 10,
+        'retweet_count': 10,
+        'reply_count': 5,
+        'like_count': 5,
         'quote_count': 3,
         'bookmark_count': 2,
         'impression_count': 1
@@ -36,21 +34,39 @@ def sort_documents(docs: List[Document]) -> List[Document]:
 
 
 def group_and_sort_documents(docs: List[Document]) -> List[Document]:
+    if not docs:
+        return []
+
     blue_docs = [doc for doc in docs if doc.metadata.get("verified_type") == "blue"]
     other_docs = [doc for doc in docs if doc.metadata.get("verified_type") != "blue"]
 
     sorted_blue_docs = sort_documents(blue_docs)
-    if len(sorted_blue_docs) > 10:
-        return sorted_blue_docs[:10]
+    if len(sorted_blue_docs) > 20:
+        combined_docs = sorted_blue_docs
+        result_docs = sorted_blue_docs[:20]
+    else:
+        sorted_other_docs = sort_documents(other_docs)
+        combined_docs = sorted_blue_docs + sorted_other_docs
+        result_docs = combined_docs[:20]
 
-    sorted_other_docs = sort_documents(other_docs)
-    combined_docs = sorted_blue_docs + sorted_other_docs
-    return combined_docs[:10]
+    has_media_image_urls = False
+    for doc in result_docs:
+        if doc.metadata.get("media_image_urls", None):
+            has_media_image_urls = True
+            break
+
+    if not has_media_image_urls:
+        for doc in combined_docs:
+            media_image_urls = doc.metadata.get("media_image_urls", [])
+            if media_image_urls and len(media_image_urls) > 0:
+                result_docs = result_docs[:-1] + [doc]
+
+    return result_docs
 
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 30
+    max_results: int = 100
 
 
 class Media(BaseModel):
@@ -65,13 +81,13 @@ class XSearchOp(SearchOp):
             'Authorization': f'Bearer {SETTINGS.X_BEARER_TOKEN}'
         }
 
-        now = datetime.now(pytz.utc)
-        six_hours_ago = now - timedelta(hours=6)
-        start_time = six_hours_ago.isoformat()
+        # now = datetime.now(pytz.utc)
+        # six_hours_ago = now - timedelta(hours=24)
+        # start_time = six_hours_ago.isoformat()
 
         search_url = "https://api.twitter.com/2/tweets/search/recent"
         query_params = {
-            'start_time': start_time,
+            # 'start_time': start_time,
             'query': input.query,
             'max_results': input.max_results,
             'tweet.fields': 'created_at,public_metrics,author_id',
