@@ -166,7 +166,10 @@ class AISearchAgent(object):
         yield AISearchSSE.images(images)
 
         related_questions = await related_questions_task
-        yield AISearchSSE.related_questions(related_questions.questions)
+        if related_questions and related_questions.questions:
+            yield AISearchSSE.related_questions(related_questions.questions)
+        else:
+            yield AISearchSSE.related_questions([])
 
         query_score = await query_score_task
         crypto_platform_score = 0.0
@@ -200,7 +203,7 @@ class AISearchAgent(object):
         return await GoogleMindMapOp().predict(EChartOpReq(text=searchapi_answer))
 
     async def _x_mindmap_op(self, x_resources):
-        return await XmindMapOp().predict(XmindMapReq(resources=select_evenly_spaced_elements(x_resources, 10)))
+        return await XmindMapOp().predict(XmindMapReq(resources=x_resources))
 
     async def _x_search_single_query(self, query: str):
         try:

@@ -29,7 +29,12 @@ class XmindMapReq(BaseModel):
         context = ""
         for doc in self.resources:
             if doc.page_content:
-                context += f"Twitter Content\n{doc.page_content}\n\n"
+                context += f"{doc.page_content}\n"
+                if doc.metadata.get('created_at'):
+                    context += f"created_at \n{doc.metadata.get('created_at')}"
+                if doc.metadata.get('username'):
+                    context += f"username \n{doc.metadata.get('username')}"
+                context += "\n\n"
         return context
 
 

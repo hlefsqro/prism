@@ -1,4 +1,7 @@
 import logging
+import random
+
+from prism.common.codec import jsondumps
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,20 @@ def score(pre, cur) -> float:
             return 5
 
 
+def add_random(s):
+    if s > 0.6 or s < -0.4:
+        return s
+    change = random.uniform(0.1, 0.3)
+    direction = random.choice([-1, 1])
+    s += direction * change
+    return s
+
+
+def process_score(score, offset=5, scale=10, lower_bound=0, upper_bound=100):
+    result = int((score + offset) * scale)
+    return max(lower_bound, min(result, upper_bound))
+
+
 def merge_score(off_chain_score=0.0,
                 crypto_platform_score=0.0,
                 volume_score=0.0,
@@ -63,17 +80,31 @@ def merge_score(off_chain_score=0.0,
     }
     try:
         if crypto_platform_score:
-            ret["on_chain_platform_score"] = crypto_platform_score
+            ret["on_chain_platform_score"] = round(crypto_platform_score, 2)
         if volume_score:
-            ret["on_chain_symbol_volume_score"] = volume_score
+            ret["on_chain_symbol_volume_score"] = round(volume_score, 2)
         if market_cap_score:
-            ret["on_chain_symbol_market_cap_score"] = market_cap_score
+            ret["on_chain_symbol_market_cap_score"] = round(market_cap_score, 2)
         if off_chain_score:
-            ret["off_chain_score"] = off_chain_score
+            ret["off_chain_score"] = round(off_chain_score, 2)
+
+        logger.info(f"org score {jsondumps(ret)}")
+
+        ret["off_chain_score"] = add_random(ret["off_chain_score"])
+        ret["on_chain_platform_score"] = add_random(ret["on_chain_platform_score"])
+        ret["on_chain_symbol_volume_score"] = add_random(ret["on_chain_symbol_volume_score"])
+        ret["on_chain_symbol_market_cap_score"] = add_random(ret["on_chain_symbol_market_cap_score"])
 
         ret["on_chain_score"] = round((ret["on_chain_platform_score"] + ret["on_chain_symbol_volume_score"] + ret[
             "on_chain_symbol_market_cap_score"]) / 3, 2)
         ret["total_score"] = round((ret["on_chain_score"] + ret["off_chain_score"]) / 2, 2)
+
+        ret["off_chain_score"] = process_score(ret["off_chain_score"])
+        ret["on_chain_symbol_market_cap_score"] = process_score(ret["on_chain_symbol_market_cap_score"])
+        ret["on_chain_platform_score"] = process_score(ret["on_chain_platform_score"])
+        ret["on_chain_symbol_volume_score"] = process_score(ret["on_chain_symbol_volume_score"])
+        ret["on_chain_score"] = process_score(ret["on_chain_score"])
+        ret["total_score"] = process_score(ret["total_score"])
 
     except Exception as e:
         logger.error(e)
