@@ -6,10 +6,10 @@ import pytz
 from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
-from prism.common.utils import select_evenly_spaced_elements
+from prism.common.utils import select_evenly_spaced_elements, score, merge_score
 from prism.operators.cmc.get_cmc_historical import GetCryptoHistoricalReq, GetCryptoHistorical
 from prism.operators.cmc.get_cmc_latest import GetCryptoLatest, GetCryptoLatestReq
-from prism.operators.cmc.get_cmc_score import get_token_transaction_growth
+from prism.operators.cmc.get_cmc_score import get_crypto_platform_score, get_crypto_symbol_score
 from prism.operators.llm import UserInputReq, EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.query_rewriting_op import QueryRewritingOp
@@ -79,8 +79,8 @@ class AISearchSSE:
         return {"event": "crypto_historical", "data": jsondumps(crypto_latest)}
 
     @staticmethod
-    def x_query_growth_score(query_score):
-        return {"event": "x_query_growth_score", "data": query_score}
+    def x_query_growth_score(score):
+        return {"event": "x_query_growth_score", "data": jsondumps(score)}
 
     @staticmethod
     def token_transaction_growth(growth):
@@ -94,26 +94,29 @@ class AISearchAgent(object):
 
         query_score_task = asyncio.create_task(self._get_query_score(org_user_input))
         crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
+        x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
 
         search_querys = set()
         search_querys.add(user_input)
         querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
-        for q in (querys.queries or []):
-            search_querys.add(q)
+        if querys:
+            for q in (querys.queries or []):
+                search_querys.add(q)
 
         yield AISearchSSE.query_rewriting(list(search_querys))
 
-        x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
-
         crypto = await crypto_task
 
-        get_token_transaction_growth_task = None
+        get_crypto_platform_score_task = None
+        get_crypto_symbol_score_task = None
         if isinstance(crypto, CmcCrypto):
             yield AISearchSSE.crypto(crypto.model_dump())
             get_crypto_latest_task = asyncio.create_task(self._get_crypto_latest(crypto.id))
             get_crypto_historical_task = asyncio.create_task(self._get_crypto_historical(crypto.id))
-            get_token_transaction_growth_task = asyncio.create_task(
-                get_token_transaction_growth(crypto.ca, crypto.platform))
+            get_crypto_platform_score_task = asyncio.create_task(
+                get_crypto_platform_score(crypto.ca, crypto.platform))
+
+            get_crypto_symbol_score_task = asyncio.create_task(get_crypto_symbol_score(crypto.symbol))
 
             yield AISearchSSE.crypto_latest(await get_crypto_latest_task)
             yield AISearchSSE.crypto_historical(await get_crypto_historical_task)
@@ -132,7 +135,6 @@ class AISearchAgent(object):
                         images.append(x.model_dump())
 
         resources: List[Document] = []
-        # resources.extend(searchapi_resources)
         resources.extend(x_resources)
 
         x_mindmap_task = None
@@ -142,13 +144,7 @@ class AISearchAgent(object):
         yield AISearchSSE.x_posts(resources)
 
         related_questions_task = asyncio.create_task(
-            self._gen_related_questions(user_input=user_input, resources=resources))
-
-        # searchapi_answer = ""
-        # async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
-        #                                                            resources=searchapi_resources, )):
-        #     searchapi_answer += chunk
-        #     yield AISearchSSE.google_answer(chunk)
+            self._gen_related_questions(user_input=org_user_input, resources=resources))
 
         x_answer = ""
         async for chunk in SearchAnswerOp().stream(SearchAnswerReq(user_input=user_input,
@@ -162,16 +158,21 @@ class AISearchAgent(object):
         yield AISearchSSE.related_questions(related_questions.questions)
 
         query_score = await query_score_task
-        yield AISearchSSE.x_query_growth_score(query_score)
+        crypto_platform_score = 0.0
+        volume_score = 0.0
+        market_cap_score = 0.0
+        if get_crypto_platform_score_task:
+            crypto_platform_score = await get_crypto_platform_score_task
+        if get_crypto_symbol_score_task:
+            volume_score, market_cap_score = await get_crypto_symbol_score_task
 
-        if get_token_transaction_growth_task:
-            token_transaction_growth = await get_token_transaction_growth_task
-            if token_transaction_growth:
-                yield AISearchSSE.token_transaction_growth(token_transaction_growth)
+        merged_score = merge_score(off_chain_score=query_score,
+                                   crypto_platform_score=crypto_platform_score,
+                                   volume_score=volume_score,
+                                   market_cap_score=market_cap_score)
 
-        # google_mindmap_task = asyncio.create_task(self._google_mindmap_op(searchapi_answer=searchapi_answer))
+        yield AISearchSSE.x_query_growth_score(merged_score)
 
-        # google_mindmap = await google_mindmap_task
         if x_mindmap_task:
             x_mindmap = await x_mindmap_task
 
@@ -224,22 +225,6 @@ class AISearchAgent(object):
             if r2 >= 100 and r1 >= 100:
                 return 3
 
-            if r2 == 0 and r1 == 0:
-                return 0
-
-            change_percentage = ((r1 - r2) / r2) * 100
-
-            if change_percentage >= 80:
-                return 5
-            elif change_percentage >= 60:
-                return 4
-            elif change_percentage >= 40:
-                return 3
-            elif change_percentage >= 20:
-                return 2
-            elif change_percentage > 0:
-                return 1
-            else:
-                return 0
+            return score(r2, r1)
         except Exception:
             return 0

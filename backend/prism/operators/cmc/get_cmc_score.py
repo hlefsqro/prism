@@ -1,121 +1,88 @@
+import logging
 from datetime import datetime, timedelta
 
 import aiohttp
 
 from prism.common.config import SETTINGS
+from prism.common.utils import score
+from prism.operators.cmc.basescan_api import base_query_score
+from prism.operators.cmc.etherscan_api import etherscan_query_score
+from prism.operators.cmc.solanascan_api import solana_query_score
 
-BITQUERY_URL = "https://graphql.bitquery.io/"
-
-GRAPHQL_QUERY_TEMPLATE = {
-    "ethereum": """
-    query ($address: String!, $startTime: ISO8601DateTime!, $endTime: ISO8601DateTime!) {
-      ethereum(network: ethereum) {
-        transfers(
-          currency: {is: $address}
-          date: {between: [$startTime, $endTime]}
-        ) {
-          count
-        }
-      }
-    }
-    """,
-    "solana": """
-    query ($address: String!, $startTime: ISO8601DateTime!, $endTime: ISO8601DateTime!) {
-      solana(network: solana) {
-        transfers(
-          currency: {is: $address}
-          date: {between: [$startTime, $endTime]}
-        ) {
-          count
-        }
-      }
-    }
-    """,
-    "base": """
-    query ($address: String!, $startTime: ISO8601DateTime!, $endTime: ISO8601DateTime!) {
-      base(network: base) {
-        transfers(
-          currency: {is: $address}
-          date: {between: [$startTime, $endTime]}
-        ) {
-          count
-        }
-      }
-    }
-    """
-}
+logger = logging.getLogger(__name__)
 
 
-async def execute_bitquery(chain, contract_address, start_time, end_time):
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-KEY": SETTINGS.BITQUERY_API_KEY
-    }
-
-    query = GRAPHQL_QUERY_TEMPLATE.get(chain)
-    if not query:
-        raise ValueError(f"Unsupported chain: {chain}")
-
-    variables = {
-        "address": contract_address,
-        "startTime": start_time,
-        "endTime": end_time
-    }
-
-    payload = {
-        "query": query,
-        "variables": variables
-    }
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(BITQUERY_URL, json=payload, headers=headers) as response:
-            if response.status != 200:
-                raise ConnectionError(f"Query failed with status code {response.status}: {await response.text()}")
-            result = await response.json()
-            try:
-                count = result["data"][chain]["transfers"][0]["count"]
-                return int(count)
-            except (KeyError, IndexError, TypeError) as e:
-                print(f"Error parsing response for chain {chain}: {e}")
-                return 0
-
-
-def calculate_growth_percentage(start_count, end_count):
-    if start_count == 0:
-        return 0.0
-    growth = ((end_count - start_count) / start_count) * 100
-    return growth
-
-
-def get_time_range(delta_hours_start, delta_hours_end):
-    end_time = datetime.utcnow() - timedelta(hours=delta_hours_start)
-    start_time = datetime.utcnow() - timedelta(hours=delta_hours_end)
-    return start_time.isoformat() + "Z", end_time.isoformat() + "Z"
-
-
-async def get_token_transaction_growth(token_address=None, platform=None):
-    if not token_address or not isinstance(platform, dict):
+async def get_crypto_platform_score(contract_address=None, platform=None):
+    if not contract_address or not isinstance(platform, dict):
         return None
     platform_name = platform.get("slug", "")
     if platform_name not in ["ethereum", "solana", "base"]:
         return None
 
-    start_time_24h, end_time_24h = get_time_range(0, 24)
-    start_time_48h, end_time_48h = get_time_range(24, 48)
+    if "ethereum" == platform_name:
+        return await etherscan_query_score(contract_address)
+    elif "solana" == platform_name:
+        return await solana_query_score(contract_address)
+    elif "base" == platform_name:
+        return await base_query_score(contract_address)
 
-    count_24h = await execute_bitquery(
-        chain=platform_name,
-        contract_address=token_address,
-        start_time=start_time_24h,
-        end_time=end_time_24h
-    )
 
-    count_48h_to_24h = await execute_bitquery(
-        chain=platform_name,
-        contract_address=token_address,
-        start_time=start_time_48h,
-        end_time=end_time_48h
-    )
+async def get_historical_data(symbol: str):
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/ohlcv/historical"
+    headers = {
+        'X-CMC_PRO_API_KEY': SETTINGS.CMC_PRO_API_KEY,
+        'Accept': 'application/json',
+    }
 
-    growth_percentage = calculate_growth_percentage(count_48h_to_24h, count_24h)
-    return growth_percentage
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(2)
+
+    end_timestamp = int(end_time.timestamp())
+    start_timestamp = int(start_time.timestamp())
+
+    params = {
+        'symbol': symbol,
+        'time_start': start_timestamp,
+        'time_end': end_timestamp,
+        'time_period': 'hourly',
+        'interval': 'hourly',
+        'convert': 'USD',
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, headers=headers, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    ohlcv_data = data['data']['quotes']
+                    return ohlcv_data
+        except aiohttp.ClientError as e:
+            logger.error(f"Failed to get historical data: {e}")
+    return None
+
+
+async def get_crypto_symbol_score(symbol=None):
+    if not symbol:
+        return 0.0, 0.0
+
+    ohlcv_data = await get_historical_data(symbol)
+    if not isinstance(ohlcv_data, list) or len(ohlcv_data) < 2:
+        return 0.0, 0.0
+
+    volume_score = 0.0
+    market_cap_score = 0.0
+
+    try:
+        prev_data = ohlcv_data[0]
+        current_data = ohlcv_data[1]
+
+        prev_volume = prev_data['quote']['USD']['volume']
+        current_volume = current_data['quote']['USD']['volume']
+        volume_score = score(prev_volume, current_volume)
+
+        prev_market_cap = prev_data['quote']['USD']['market_cap']
+        current_market_cap = current_data['quote']['USD']['market_cap']
+        market_cap_score = score(prev_market_cap, current_market_cap)
+    except KeyError as e:
+        logger.error(f"Failed to get historical data: {e}")
+    return volume_score, market_cap_score

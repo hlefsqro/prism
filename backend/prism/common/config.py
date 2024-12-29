@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     API_KEYS: List[str] = Field(default_factory=list)
     CMC_PRO_API_KEY: Optional[str] = None
     BITQUERY_API_KEY: Optional[str] = None
+    ETHERSCAN_API_KEY: Optional[str] = None
+    BASE_API_KEY: Optional[str] = None
 
     @field_validator('API_KEYS', mode='before')
     def validator_api_keys(cls, v):
