@@ -19,7 +19,7 @@ from prism.operators.search.x_count import XCountReq, XCountOp
 from prism.operators.web3.get_c_historical import GetCryptoHistoricalReq, GetCryptoHistorical
 from prism.operators.web3.get_c_latest import GetCryptoLatest, GetCryptoLatestReq
 from prism.operators.web3.get_c_score import get_crypto_platform_score, get_crypto_symbol_score
-from prism.operators.web3.get_d_markets import get_markets
+from prism.operators.web3.get_d_markets import get_markets, get_markets_info
 from prism.repository.cmc_mapping import get_crypto_mapping, CmcCrypto
 
 logger = logging.getLogger(__name__)
@@ -135,12 +135,38 @@ class AISearchAgent(object):
                 get_crypto_platform_score(crypto.ca, crypto.platform))
 
             get_markets_task = asyncio.create_task(get_markets(crypto.ca, crypto.platform))
+            get_markets_info_task = asyncio.create_task(get_markets_info(crypto.ca, crypto.platform))
 
             get_crypto_symbol_score_task = asyncio.create_task(get_crypto_symbol_score(crypto.symbol))
 
-            yield AISearchSSE.crypto_latest(await get_crypto_latest_task)
-            yield AISearchSSE.crypto_historical(await get_crypto_historical_task)
-            yield AISearchSSE.d_markets(await get_markets_task)
+            markets_info = await get_markets_info_task
+            crypto_latest = await get_crypto_latest_task
+            if isinstance(markets_info, dict) and isinstance(crypto_latest, dict):
+                try:
+                    mcap = markets_info.get("data", {}).get("mcap", None)
+                    if mcap:
+                        dynamic_id = next(iter(crypto_latest['data']))
+                        if dynamic_id in crypto_latest['data']:
+                            crypto_latest['data'][dynamic_id]['quote']['USD']['market_cap'] = mcap
+                except Exception as e:
+                    pass
+
+            crypto_historical = await get_crypto_historical_task
+
+            if crypto_historical:
+                yield AISearchSSE.crypto_latest(crypto_latest)
+                yield AISearchSSE.crypto_historical(crypto_historical)
+            else:
+                d_markets = {}
+                markets = await get_markets_task
+                if isinstance(markets, dict):
+                    d_markets.update(markets)
+                if isinstance(markets_info, dict):
+                    if d_markets:
+                        d_markets.get("data", {}).update(markets_info.get("data", {}))
+                    else:
+                        d_markets.update(markets_info)
+                yield AISearchSSE.d_markets(d_markets)
 
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
 

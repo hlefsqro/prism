@@ -27,6 +27,7 @@ async def get_crypto_mapping(key: str) -> Optional[CmcCrypto]:
             logger.info(f"crypto mapping keys: {list(CMC_MAPPING.keys())}")
             return m
         ret = await GetCryptoInfo().call(GetCryptoInfoReq(symbol_or_address=key))
+        temp = None
         if ret and ret.data:
             for d in ret.data.values():
                 if isinstance(d, dict):
@@ -48,8 +49,12 @@ async def get_crypto_mapping(key: str) -> Optional[CmcCrypto]:
                                         rr = CmcCrypto(**item)
                                         rr.ca = ca
                                         CMC_MAPPING[ca] = rr
+                                        temp = rr
 
         cached = CMC_MAPPING.get(key, None)
+        if not cached and ret and ret.data and temp:
+            return temp
+
         if not cached:
             v2 = await GetCryptoInfoV2().call(ca=key)
             if isinstance(v2, dict):

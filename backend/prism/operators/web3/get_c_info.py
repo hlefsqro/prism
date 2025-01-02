@@ -62,7 +62,8 @@ class GetCryptoInfoV2:
                     platform = "base"
                 else:
                     ret = await self._do_call(chain="tron", ca=ca)
-                    platform = "tron"
+                    if ret:
+                        platform = "tron"
         if platform:
             return {"platform": platform, "symbol": ret}
         return None
