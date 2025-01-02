@@ -7,13 +7,12 @@ import pytz
 from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
-from prism.common.utils import select_evenly_spaced_elements, score, merge_score
+from prism.common.utils import score, merge_score
 from prism.operators.cmc.get_cmc_historical import GetCryptoHistoricalReq, GetCryptoHistorical
 from prism.operators.cmc.get_cmc_latest import GetCryptoLatest, GetCryptoLatestReq
 from prism.operators.cmc.get_cmc_score import get_crypto_platform_score, get_crypto_symbol_score
-from prism.operators.llm import UserInputReq, EChartOpReq
+from prism.operators.llm import EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
-from prism.operators.llm.query_rewriting_op import QueryRewritingOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
 from prism.operators.llm.search_answer_op import SearchAnswerOp, SearchAnswerReq
 from prism.operators.llm.x_mindmap_op import XmindMapOp, XmindMapReq, TwitterSummaryResp
@@ -100,17 +99,17 @@ class AISearchAgent(object):
         crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
         x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
 
-        try:
-            search_querys = set()
-            search_querys.add(user_input)
-            querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
-            if querys:
-                for q in (querys.queries or []):
-                    search_querys.add(q)
-
-            yield AISearchSSE.query_rewriting(list(search_querys))
-        except Exception as e:
-            logger.error(e)
+        # try:
+        #     search_querys = set()
+        #     search_querys.add(user_input)
+        #     querys = await QueryRewritingOp().predict(UserInputReq(user_input=user_input))
+        #     if querys:
+        #         for q in (querys.queries or []):
+        #             search_querys.add(q)
+        #
+        #     yield AISearchSSE.query_rewriting(list(search_querys))
+        # except Exception as e:
+        #     logger.error(e)
 
         crypto = await crypto_task
 
@@ -151,8 +150,8 @@ class AISearchAgent(object):
 
         yield AISearchSSE.x_posts(resources)
 
-        related_questions_task = asyncio.create_task(
-            self._gen_related_questions(user_input=org_user_input, resources=resources))
+        # related_questions_task = asyncio.create_task(
+        #     self._gen_related_questions(user_input=org_user_input, resources=resources))
 
         try:
             x_answer = ""
@@ -165,11 +164,11 @@ class AISearchAgent(object):
 
         yield AISearchSSE.images(images)
 
-        related_questions = await related_questions_task
-        if related_questions and related_questions.questions:
-            yield AISearchSSE.related_questions(related_questions.questions)
-        else:
-            yield AISearchSSE.related_questions([])
+        # related_questions = await related_questions_task
+        # if related_questions and related_questions.questions:
+        #     yield AISearchSSE.related_questions(related_questions.questions)
+        # else:
+        #     yield AISearchSSE.related_questions([])
 
         query_score = await query_score_task
         crypto_platform_score = 0.0
