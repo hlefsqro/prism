@@ -18,7 +18,7 @@ class CmcOp(ABC, BaseModel):
     async def call(self, input: BaseModelInput = None) -> Optional[Any]:
         headers = {
             'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': SETTINGS.CMC_PRO_API_KEY,
+            'X-CMC_PRO_API_KEY': SETTINGS.C_PRO_API_KEY,
         }
 
         params = await self._to_params(input)

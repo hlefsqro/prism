@@ -1,4 +1,3 @@
-# Etherscan API Key
 import logging
 import time
 
@@ -9,12 +8,12 @@ from prism.common.utils import score
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = 'https://api.etherscan.io/api'
+BASE_URL = SETTINGS.E_BASE_URL
 
 
 async def get_block_by_timestamp(timestamp):
     try:
-        url = f"{BASE_URL}?module=block&action=getblocknobytime&timestamp={timestamp}&closest=before&apikey={SETTINGS.ETHERSCAN_API_KEY}"
+        url = f"{BASE_URL}?module=block&action=getblocknobytime&timestamp={timestamp}&closest=before&apikey={SETTINGS.E_API_KEY}"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -27,7 +26,7 @@ async def get_block_by_timestamp(timestamp):
 
 
 async def get_erc20_token_transfer_events(contract_address, start_block, end_block):
-    url = f"{BASE_URL}?module=account&action=tokentx&contractaddress={contract_address}&startblock={start_block}&endblock={end_block}&sort=asc&apikey={SETTINGS.ETHERSCAN_API_KEY}"
+    url = f"{BASE_URL}?module=account&action=tokentx&contractaddress={contract_address}&startblock={start_block}&endblock={end_block}&sort=asc&apikey={SETTINGS.E_API_KEY}"
 
     try:
         async with aiohttp.ClientSession() as session:

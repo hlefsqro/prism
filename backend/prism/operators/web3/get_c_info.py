@@ -2,6 +2,7 @@ from typing import Optional, Dict
 
 from pydantic import BaseModel
 
+from prism.common.config import SETTINGS
 from prism.operators.web3 import CmcOp
 
 
@@ -17,7 +18,7 @@ class CryptoInfo(BaseModel):
 
 
 class GetCryptoInfo(CmcOp):
-    url: str = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/info"
+    url: str = f"{SETTINGS.C_PRO_BASE_URL}/v2/cryptocurrency/info"
 
     async def call(self, input: GetCryptoInfoReq = None) -> Optional[CryptoInfo]:
         if input and not input.symbol_or_address:

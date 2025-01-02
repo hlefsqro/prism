@@ -6,8 +6,6 @@ import aiohttp
 from prism.common.config import SETTINGS
 from prism.common.utils import score
 
-BASESCAN_API_URL = "https://api.basescan.org/api"
-
 logger = logging.getLogger(__name__)
 
 
@@ -17,12 +15,12 @@ async def get_block_by_timestamp(timestamp: int) -> int:
         "action": "getblocknobytime",
         "timestamp": timestamp,
         "closest": "before",
-        "apikey": SETTINGS.BASE_API_KEY
+        "apikey": SETTINGS.B_API_KEY
     }
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(BASESCAN_API_URL, params=params) as resp:
+            async with session.get(SETTINGS.B_API_URL, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     if data.get("status") == "1":
@@ -44,12 +42,12 @@ async def get_tx_list_in_block_range(
         "startblock": start_block,
         "endblock": end_block,
         "sort": "asc",
-        "apikey": SETTINGS.BASE_API_KEY
+        "apikey": SETTINGS.B_API_KEY
     }
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(BASESCAN_API_URL, params=params) as resp:
+            async with session.get(SETTINGS.B_API_URL, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     if data.get("status") == "1":

@@ -8,9 +8,9 @@ from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
 from prism.common.utils import score, merge_score
-from prism.operators.web3.get_cmc_historical import GetCryptoHistoricalReq, GetCryptoHistorical
-from prism.operators.web3.get_cmc_latest import GetCryptoLatest, GetCryptoLatestReq
-from prism.operators.web3.get_cmc_score import get_crypto_platform_score, get_crypto_symbol_score
+from prism.operators.web3.get_c_historical import GetCryptoHistoricalReq, GetCryptoHistorical
+from prism.operators.web3.get_c_latest import GetCryptoLatest, GetCryptoLatestReq
+from prism.operators.web3.get_c_score import get_crypto_platform_score, get_crypto_symbol_score
 from prism.operators.llm import EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions

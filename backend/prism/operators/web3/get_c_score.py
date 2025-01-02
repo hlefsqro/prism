@@ -5,9 +5,9 @@ import aiohttp
 
 from prism.common.config import SETTINGS
 from prism.common.utils import score
-from prism.operators.web3.basescan_api import base_query_score
-from prism.operators.web3.etherscan_api import etherscan_query_score
-from prism.operators.web3.solanascan_api import solana_query_score
+from prism.operators.web3.bscan_api import base_query_score
+from prism.operators.web3.escan_api import etherscan_query_score
+from prism.operators.web3.sscan_api import solana_query_score
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ async def get_crypto_platform_score(contract_address=None, platform=None):
 
 
 async def get_historical_data(symbol: str):
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/ohlcv/historical"
+    url = f"{SETTINGS.C_PRO_BASE_URL}/v1/cryptocurrency/ohlcv/historical"
     headers = {
-        'X-CMC_PRO_API_KEY': SETTINGS.CMC_PRO_API_KEY,
+        'X-CMC_PRO_API_KEY': SETTINGS.C_PRO_API_KEY,
         'Accept': 'application/json',
     }
 

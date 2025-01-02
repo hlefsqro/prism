@@ -8,7 +8,7 @@ from prism.common.utils import score
 
 logger = logging.getLogger(__name__)
 
-BITQUERY_URL = "https://graphql.bitquery.io/"
+BITQUERY_URL = SETTINGS.BQ_BASE_URL
 GRAPHQL_QUERY_TEMPLATE = {
     "ethereum": """
     query ($address: String!, $startTime: ISO8601DateTime!, $endTime: ISO8601DateTime!) {
@@ -52,7 +52,7 @@ GRAPHQL_QUERY_TEMPLATE = {
 async def execute_bitquery(chain, contract_address, start_time, end_time):
     headers = {
         "Content-Type": "application/json",
-        "X-API-KEY": SETTINGS.BITQUERY_API_KEY
+        "X-API-KEY": SETTINGS.BQ_API_KEY
     }
 
     try:

@@ -2,6 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
+from prism.common.config import SETTINGS
 from prism.operators.web3 import CmcOp
 
 
@@ -22,7 +23,7 @@ class CmcMap(BaseModel):
 
 
 class GetCmcMap(CmcOp):
-    url: str = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"
+    url: str = f"{SETTINGS.C_PRO_BASE_URL}/v1/cryptocurrency/map"
 
     async def _to_resp(self, json: dict) -> List[CmcMap]:
         ret = []

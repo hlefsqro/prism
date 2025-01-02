@@ -20,10 +20,14 @@ class Settings(BaseSettings):
     X_BEARER_TOKEN: Optional[str] = None
     SEARCHAPI_API_KEY: Optional[str] = None
     API_KEYS: List[str] = Field(default_factory=list)
-    CMC_PRO_API_KEY: Optional[str] = None
-    BITQUERY_API_KEY: Optional[str] = None
-    ETHERSCAN_API_KEY: Optional[str] = None
-    BASE_API_KEY: Optional[str] = None
+    C_PRO_API_KEY: Optional[str] = None
+    C_PRO_BASE_URL: Optional[str] = None
+    BQ_API_KEY: Optional[str] = None
+    BQ_BASE_URL: Optional[str] = None
+    E_API_KEY: Optional[str] = None
+    E_BASE_URL: Optional[str] = None
+    B_API_KEY: Optional[str] = None
+    B_API_URL: Optional[str] = None
 
     @field_validator('API_KEYS', mode='before')
     def validator_api_keys(cls, v):
