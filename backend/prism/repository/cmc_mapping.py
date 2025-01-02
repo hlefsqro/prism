@@ -3,10 +3,10 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from prism.common.codec import jsonloads
-from prism.operators.web3.get_c_info import GetCryptoInfoReq, GetCryptoInfo
+from prism.operators.web3.get_c_info import GetCryptoInfoReq, GetCryptoInfo, GetCryptoInfoV2
 
 logger = logging.getLogger(__name__)
+
 
 class CmcCrypto(BaseModel):
     id: Optional[int] = None
@@ -48,6 +48,16 @@ async def get_crypto_mapping(key: str) -> Optional[CmcCrypto]:
                                         rr = CmcCrypto(**item)
                                         rr.ca = ca
                                         CMC_MAPPING[ca] = rr
+
+        cached = CMC_MAPPING.get(key, None)
+        if not cached:
+            v2 = await GetCryptoInfoV2().call(ca=key)
+            if isinstance(v2, dict):
+                v2_r = CmcCrypto()
+                v2_r.symbol = v2.get('symbol', "")
+                v2_r.ca = key
+                v2_r.platform = {"slug": v2.get('platform', "")}
+                CMC_MAPPING[key] = v2_r
         logger.info(f"crypto mapping keys: {list(CMC_MAPPING.keys())}")
         return CMC_MAPPING.get(key, None)
     except Exception as e:

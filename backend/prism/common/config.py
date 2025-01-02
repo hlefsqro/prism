@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     E_BASE_URL: Optional[str] = None
     B_API_KEY: Optional[str] = None
     B_API_URL: Optional[str] = None
+    D_API_KEY: Optional[str] = None
+    D_BASE_URL: Optional[str] = None
 
     @field_validator('API_KEYS', mode='before')
     def validator_api_keys(cls, v):

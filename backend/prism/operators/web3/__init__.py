@@ -29,7 +29,7 @@ class CmcOp(ABC, BaseModel):
                     response.raise_for_status()
                     json = await response.json()
                     return await self._to_resp(json)
-        except aiohttp.ClientResponseError as e:
+        except Exception as e:
             logging.error(e)
 
         return None

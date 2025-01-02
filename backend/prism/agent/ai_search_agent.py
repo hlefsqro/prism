@@ -8,9 +8,6 @@ from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
 from prism.common.utils import score, merge_score
-from prism.operators.web3.get_c_historical import GetCryptoHistoricalReq, GetCryptoHistorical
-from prism.operators.web3.get_c_latest import GetCryptoLatest, GetCryptoLatestReq
-from prism.operators.web3.get_c_score import get_crypto_platform_score, get_crypto_symbol_score
 from prism.operators.llm import EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
@@ -19,6 +16,10 @@ from prism.operators.llm.x_mindmap_op import XmindMapOp, XmindMapReq, TwitterSum
 from prism.operators.search.searchapi import SearchApiOp, SearchApiReq
 from prism.operators.search.x import XSearchOp, XSearchReq, Media
 from prism.operators.search.x_count import XCountReq, XCountOp
+from prism.operators.web3.get_c_historical import GetCryptoHistoricalReq, GetCryptoHistorical
+from prism.operators.web3.get_c_latest import GetCryptoLatest, GetCryptoLatestReq
+from prism.operators.web3.get_c_score import get_crypto_platform_score, get_crypto_symbol_score
+from prism.operators.web3.get_d_markets import get_markets
 from prism.repository.cmc_mapping import get_crypto_mapping, CmcCrypto
 
 logger = logging.getLogger(__name__)
@@ -74,11 +75,21 @@ class AISearchSSE:
 
     @staticmethod
     def crypto_latest(crypto_latest):
+        if not crypto_latest:
+            return
         return {"event": "crypto_latest", "data": jsondumps(crypto_latest)}
 
     @staticmethod
     def crypto_historical(crypto_latest):
+        if not crypto_latest:
+            return
         return {"event": "crypto_historical", "data": jsondumps(crypto_latest)}
+
+    @staticmethod
+    def d_markets(crypto_latest):
+        if not crypto_latest:
+            return
+        return {"event": "d_markets", "data": jsondumps(crypto_latest)}
 
     @staticmethod
     def x_query_growth_score(score):
@@ -123,10 +134,13 @@ class AISearchAgent(object):
             get_crypto_platform_score_task = asyncio.create_task(
                 get_crypto_platform_score(crypto.ca, crypto.platform))
 
+            get_markets_task = asyncio.create_task(get_markets(crypto.ca, crypto.platform))
+
             get_crypto_symbol_score_task = asyncio.create_task(get_crypto_symbol_score(crypto.symbol))
 
             yield AISearchSSE.crypto_latest(await get_crypto_latest_task)
             yield AISearchSSE.crypto_historical(await get_crypto_historical_task)
+            yield AISearchSSE.d_markets(await get_markets_task)
 
         x_search_results = await asyncio.gather(*x_search_tasks, return_exceptions=True)
 
