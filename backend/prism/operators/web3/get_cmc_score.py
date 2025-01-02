@@ -5,9 +5,9 @@ import aiohttp
 
 from prism.common.config import SETTINGS
 from prism.common.utils import score
-from prism.operators.cmc.basescan_api import base_query_score
-from prism.operators.cmc.etherscan_api import etherscan_query_score
-from prism.operators.cmc.solanascan_api import solana_query_score
+from prism.operators.web3.basescan_api import base_query_score
+from prism.operators.web3.etherscan_api import etherscan_query_score
+from prism.operators.web3.solanascan_api import solana_query_score
 
 logger = logging.getLogger(__name__)
 

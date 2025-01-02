@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from prism.operators.cmc import CmcOp
+from prism.operators.web3 import CmcOp
 
 
 class GetCmcMapReq(BaseModel):

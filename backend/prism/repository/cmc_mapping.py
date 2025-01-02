@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from prism.common.codec import jsonloads
-from prism.operators.cmc.get_cmc_info import GetCryptoInfoReq, GetCryptoInfo
+from prism.operators.web3.get_cmc_info import GetCryptoInfoReq, GetCryptoInfo
 
 logger = logging.getLogger(__name__)
 
