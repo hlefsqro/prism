@@ -57,7 +57,7 @@ async def get_historical_data(symbol: str):
                     ohlcv_data = data['data']['quotes']
                     return ohlcv_data
         except aiohttp.ClientError as e:
-            logger.error(f"Failed to get historical data: {e}")
+            logger.error(f"Failed to get historical data: {params}")
     return None
 
 
@@ -83,6 +83,6 @@ async def get_crypto_symbol_score(symbol=None):
         prev_market_cap = prev_data['quote']['USD']['market_cap']
         current_market_cap = current_data['quote']['USD']['market_cap']
         market_cap_score = score(prev_market_cap, current_market_cap)
-    except KeyError as e:
-        logger.error(f"Failed to get historical data: {e}")
+    except Exception as e:
+        logger.error(f"Failed to get historical data: {symbol}")
     return volume_score, market_cap_score

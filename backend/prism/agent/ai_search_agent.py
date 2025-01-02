@@ -262,7 +262,7 @@ class AISearchAgent(object):
 
     async def _get_crypto_historical(self, id):
         now = datetime.now(pytz.utc)
-        one_hour_ago = now - timedelta(hours=1)
+        one_hour_ago = now - timedelta(hours=8)
         return await GetCryptoHistorical().call(GetCryptoHistoricalReq(id=str(id),
                                                                        time_start=str(one_hour_ago),
                                                                        time_end=str(now)))

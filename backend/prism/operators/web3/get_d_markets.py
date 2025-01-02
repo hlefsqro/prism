@@ -3,6 +3,7 @@ from typing import Any
 
 import aiohttp
 
+from prism.common.codec import jsondumps
 from prism.common.config import SETTINGS
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,8 @@ async def get_markets(contract_address=None, platform=None) -> Any:
             async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
+                    if data:
+                        logger.info(f"get_markets data: {jsondumps(data)}")
                     return data
                 else:
                     return None
@@ -52,6 +55,8 @@ async def get_markets_info(contract_address=None, platform=None) -> Any:
             async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
+                    if data:
+                        logger.info(f"get_markets_info data: {jsondumps(data)}")
                     return data
                 else:
                     return None

@@ -80,10 +80,12 @@ class GetCryptoInfoV2:
                 async with session.get(url, headers=headers) as response:
                     if response.status == 200:
                         data = await response.json()
-                        symbol = data.get("data", {}).get("symbol")
-                        return symbol
+                        if data:
+                            logger.info(f"GetCryptoInfoV2 got json: {jsondumps(data)}")
+                            symbol = data.get("data", {}).get("symbol")
+                            return symbol
                     else:
                         return None
         except Exception as e:
-            logger.error(f"GetCryptoInfoV2 got exception: {e}")
+            logger.error(f"GetCryptoInfoV2 got exception: {ca}")
         return None

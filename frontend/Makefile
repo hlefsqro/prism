@@ -1,4 +1,4 @@
-IMAGE_NAME := prismpro2024/prism-fe-x86:8
+IMAGE_NAME := prismpro2024/prism-fe-x86:9
 
 docker_buildx:
 	docker buildx build --platform linux/amd64 -t ${IMAGE_NAME} .

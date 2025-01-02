@@ -11,6 +11,7 @@ class GetCryptoHistoricalReq(BaseModel):
     convert: str = "USD"
     time_start: Optional[str] = None
     time_end: Optional[str] = None
+    interval: Optional[str] = "1h"
     count: int = 20
 
 
