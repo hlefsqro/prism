@@ -8,7 +8,9 @@ With Prism, you can easily verify each answer in real time by checking live refe
 
 ## Try with Prism
 
-TODO
+Below are screenshots of our products
+
+![img.png](docs/img/img.png)
 
 ## Architecture
 
