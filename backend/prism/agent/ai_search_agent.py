@@ -7,7 +7,7 @@ import pytz
 from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
-from prism.common.utils import score, merge_score
+from prism.common.utils import score, merge_score, calculate_topic_activity
 from prism.operators.llm import EChartOpReq
 from prism.operators.llm.google_mindmap_op import GoogleMindMapOp
 from prism.operators.llm.related_questions_op import RelatedQuestionsOp, RelatedQuestionsReq, Questions
@@ -106,7 +106,7 @@ class AISearchAgent(object):
         org_user_input = user_input
         logger.info('User input is %s', org_user_input)
 
-        query_score_task = asyncio.create_task(self._get_query_score(org_user_input))
+        # query_score_task = asyncio.create_task(self._get_query_score(org_user_input))
         crypto_task = asyncio.create_task(get_crypto_mapping(org_user_input))
         x_search_tasks = [self._x_search_single_query(query) for query in [org_user_input]]
 
@@ -210,7 +210,7 @@ class AISearchAgent(object):
         # else:
         #     yield AISearchSSE.related_questions([])
 
-        query_score = await query_score_task
+        query_score = calculate_topic_activity(x_resources)
         crypto_platform_score = 0.0
         volume_score = 0.0
         market_cap_score = 0.0

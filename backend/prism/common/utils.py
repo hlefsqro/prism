@@ -1,5 +1,9 @@
 import logging
 import random
+from datetime import datetime
+from typing import List
+
+from langchain_core.documents import Document
 
 from prism.common.codec import jsondumps
 
@@ -111,3 +115,61 @@ def merge_score(off_chain_score=0.0,
 
     logger.info(f"final score {jsondumps(ret)}")
     return ret
+
+
+def calculate_tweet_score(tweet):
+    score = 0
+    try:
+        try:
+            created_at = tweet['created_at']
+            created_at = created_at.replace("Z", "")
+            tweet_time = datetime.fromisoformat(created_at)
+
+            time_diff = (datetime.utcnow() - tweet_time).total_seconds()
+
+            if time_diff <= 3600:
+                score += 3
+            elif time_diff <= 21600:
+                score += 2
+            elif time_diff <= 43200:
+                score += 1
+            elif time_diff <= 86400:
+                score += 0
+            elif time_diff <= 172800:
+                score += -1
+            else:
+                score += -2
+        except Exception as e:
+            logger.error(e)
+
+        metrics = tweet.get('public_metrics', {})
+        like_count = metrics.get('like_count', 0)
+        retweet_count = metrics.get('retweet_count', 0)
+        reply_count = metrics.get('reply_count', 0)
+
+        interaction_score = (like_count * 0.4) + (retweet_count * 0.3) + (reply_count * 0.3)
+        score += interaction_score / 100
+
+        if tweet.get('verified', None):
+            score += 0.2
+
+        if tweet.get('media_image_urls', None):
+            score += 0.3
+
+        score = max(-4.5, min(4.2, score))
+    except Exception as e:
+        logger.error(e)
+
+    return score
+
+
+def calculate_topic_activity(tweets: List[Document]):
+    try:
+        total_score = 3
+        if tweets:
+            for tweet in tweets:
+                total_score += calculate_tweet_score(tweet.metadata)
+
+        return total_score / len(tweets)
+    except Exception as e:
+        return 3

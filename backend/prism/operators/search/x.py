@@ -6,8 +6,7 @@ from langchain_core.documents import Document
 from pydantic import BaseModel
 
 from prism.common.codec import jsondumps
-from prism.common.config import SETTINGS
-from prism.operators.search import SearchOp, get_x_token
+from prism.operators.search import SearchOp, get_x_token, ban_token
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +77,9 @@ class Media(BaseModel):
 class XSearchOp(SearchOp):
 
     async def search(self, input: XSearchReq) -> Optional[List[Document | Media]]:
+        x_token = get_x_token()
         headers = {
-            'Authorization': f'Bearer {get_x_token()}'
+            'Authorization': f'Bearer {x_token}'
         }
 
         # now = datetime.now(pytz.utc)
@@ -102,6 +102,7 @@ class XSearchOp(SearchOp):
         async with aiohttp.ClientSession() as session:
             async with session.get(search_url, headers=headers, params=query_params) as response:
                 if response.status == 429:
+                    ban_token(x_token)
                     logger.warning(
                         f"Rate limit exceeded. X-Rate-Limit-Reset: {response.headers.get('X-Rate-Limit-Reset')}")
                     return []
