@@ -22,15 +22,15 @@ You are a helpful AI analyze assistant. Your task is to analyze the question bas
 
 <Output format>
 
-## **Summary**
+## Summary
 
 ... ...
 
-## **Key Points**
+## Key Points
 
-- **Point 1**: ... ...
+- Point 1: ... ...
 
-- **Point 2**: .. ...
+- Point 2: .. ...
 
 ... ...
 

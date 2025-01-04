@@ -67,7 +67,7 @@ def group_and_sort_documents(docs: List[Document]) -> List[Document]:
 
 class XSearchReq(BaseModel):
     query: str
-    max_results: int = 20
+    max_results: int = 10
 
 
 class Media(BaseModel):

@@ -16,6 +16,12 @@ class SearchOp(ABC):
         raise NotImplementedError
 
 
+def print_token_with_masking(token: str):
+    if len(token) > 8:
+        masked_token = token[:4] + '*' * (len(token) - 8) + token[-4:]
+        print(masked_token)
+
+
 def token_generator(tokens):
     while True:
         for token in tokens:
@@ -26,4 +32,6 @@ token_gen = token_generator(SETTINGS.X_BEARER_TOKENS)
 
 
 def get_x_token() -> str:
-    return next(token_gen)
+    cur_token = next(token_gen)
+    print_token_with_masking(cur_token)
+    return cur_token

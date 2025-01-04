@@ -270,11 +270,11 @@ class AISearchAgent(object):
     async def _get_query_score(self, query: str):
         try:
             now = datetime.now(pytz.utc)
-            end_1 = (now - timedelta(minutes=30)).isoformat()
-            begin_1 = (now - timedelta(minutes=60)).isoformat()
+            end_1 = (now - timedelta(minutes=10)).isoformat()
+            begin_1 = (now - timedelta(minutes=20)).isoformat()
 
-            end_2 = (now - timedelta(minutes=90)).isoformat()
-            begin_2 = (now - timedelta(minutes=120)).isoformat()
+            end_2 = (now - timedelta(minutes=70)).isoformat()
+            begin_2 = (now - timedelta(minutes=80)).isoformat()
 
             r1 = await XCountOp().search(XCountReq(query=query, start_time=begin_1, end_time=end_1))
             r2 = await XCountOp().search(XCountReq(query=query, start_time=begin_2, end_time=end_2))

@@ -1,4 +1,4 @@
-IMAGE_NAME := prismpro2024/prism-fe-x86:close-3
+IMAGE_NAME := prismpro2024/prism-fe-x86:close-8
 #IMAGE_NAME := prismpro2024/prism-fe-x86:close
 
 docker_buildx:

@@ -23,7 +23,7 @@ class XCountOp(SearchOp):
             'start_time': input.start_time,
             'end_time': input.end_time,
             'query': input.query,
-            'max_results': 100,
+            'max_results': 10,
         }
 
         ret = 0
