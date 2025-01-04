@@ -5,3 +5,14 @@ root * /usr/share/caddy
 file_server
 
 try_files {path} /index.html
+
+header {
+    Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+    Pragma "no-cache"
+    Expires "0"
+}
+
+@staticJs path /_next/static/*/*.js
+header @staticJs {
+    Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+}

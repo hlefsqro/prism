@@ -1,7 +1,8 @@
-IMAGE_NAME := prismpro2024/prism-fe-x86:9
+IMAGE_NAME := prismpro2024/prism-fe-x86:close-3
+#IMAGE_NAME := prismpro2024/prism-fe-x86:close
 
 docker_buildx:
-	docker buildx build --platform linux/amd64 -t ${IMAGE_NAME} .
+	docker buildx build --no-cache --platform linux/amd64 -t ${IMAGE_NAME} .
 
 docker_push:
 	docker push ${IMAGE_NAME}
@@ -9,6 +10,6 @@ docker_push:
 
 
 docker_run:
-	docker build -t ${IMAGE_NAME} .
-	docker run -itd -p 80:80 ${IMAGE_NAME}
+	docker build -t 0.0 .
+	docker run -itd -p 80:80 0.0
 

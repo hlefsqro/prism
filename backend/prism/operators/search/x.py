@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from prism.common.codec import jsondumps
 from prism.common.config import SETTINGS
-from prism.operators.search import SearchOp
+from prism.operators.search import SearchOp, get_x_token
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class XSearchOp(SearchOp):
 
     async def search(self, input: XSearchReq) -> Optional[List[Document | Media]]:
         headers = {
-            'Authorization': f'Bearer {SETTINGS.X_BEARER_TOKEN}'
+            'Authorization': f'Bearer {get_x_token()}'
         }
 
         # now = datetime.now(pytz.utc)

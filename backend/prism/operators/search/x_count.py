@@ -2,7 +2,7 @@ import aiohttp
 from pydantic import BaseModel
 
 from prism.common.config import SETTINGS
-from prism.operators.search import SearchOp
+from prism.operators.search import SearchOp, get_x_token
 
 
 class XCountReq(BaseModel):
@@ -15,7 +15,7 @@ class XCountOp(SearchOp):
 
     async def search(self, input: XCountReq) -> int:
         headers = {
-            'Authorization': f'Bearer {SETTINGS.X_BEARER_TOKEN}'
+            'Authorization': f'Bearer {get_x_token()}'
         }
 
         search_url = "https://api.twitter.com/2/tweets/search/recent"
