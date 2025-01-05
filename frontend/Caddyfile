@@ -5,3 +5,7 @@ root * /usr/share/caddy
 file_server
 
 try_files {path} /index.html
+
+header {
+    Cache-Control "no-cache"
+}
