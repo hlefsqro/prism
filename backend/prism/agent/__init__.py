@@ -1,13 +1,19 @@
 import logging
+import time
+import uuid
 from abc import abstractmethod
 from typing import TypedDict, Type, Optional, Any, List, AsyncGenerator
 
 import requests
+from langchain_core.callbacks import Callbacks
+from langchain_core.runnables import RunnableConfig
 from langchain_core.runnables.utils import Input, Output
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel, computed_field
+
+from prism.chains.log_callback import LLMLogCallbackHandler
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +34,21 @@ def state_merge_list(left, right):
     if not isinstance(right, list):
         right = [right]
     return left + right
+
+
+def create_agent_runnable_config(max_concurrency: int = None,
+                                 thread_id: str = None,
+                                 callbacks: Callbacks = None) -> RunnableConfig:
+    config = RunnableConfig(callbacks=callbacks, )
+    configurable = {
+        'thread_id': thread_id or str(uuid.uuid4()),
+        'thread_ts': time.time()
+    }
+    if max_concurrency:
+        configurable['max_concurrency'] = max_concurrency
+        config.update({'max_concurrency': max_concurrency})
+    config.update({"configurable": configurable})
+    return config
 
 
 class BaseGraphNode(BaseModel):
@@ -97,7 +118,7 @@ class BaseGraphAgent(BaseModel):
 
         nodes = self.graph_nodes
 
-        [node._join_graph(builder) for node in nodes]
+        [node.join_graph(builder) for node in nodes]
 
         self._set_edges(builder)
 
@@ -119,15 +140,19 @@ class BaseGraphAgent(BaseModel):
     async def _post_invoke_ret(self, state: dict) -> Optional[Any]:
         return state
 
-    async def ainvoke(self, input: Input) -> Optional[Output]:
+    async def call(self, input: Input) -> Optional[Output]:
         ret = None
         try:
             graph = self.compile_graph()
             graph_input = self._process_input(input)
-            graph_ret = await graph.ainvoke(graph_input)
+            graph_ret = await graph.ainvoke(graph_input,
+                                            config=create_agent_runnable_config(
+                                                max_concurrency=4,
+                                                callbacks=[LLMLogCallbackHandler()])
+                                            )
             ret = await self._post_invoke_ret(graph_ret)
         except Exception as e:
-            logger.warning(f"{self.__class__.__name__} ainvoke: {e}", exc_info=True)
+            logger.warning(f"{self.__class__.__name__} call: {e}", exc_info=True)
         return ret
 
     async def abatch(self, input_list: List[Input]) -> List[Output]:
