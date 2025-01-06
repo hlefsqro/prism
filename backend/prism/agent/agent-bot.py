@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, TypedDict, Annotated, Optional
 
 from pydantic import BaseModel
 
-from prism.agent import recall_market_cap_coins, filter_coins_by_platform, search_derivative_new_coins, rank_coins
+from prism.agent import recall_market_cap_coins, filter_coins_by_platform, search_derivative_new_coins, rank_coins, \
+    BaseGraphNode, state_overwrite
 
 
 class NewCoinsRecommendReq(BaseModel):
@@ -13,6 +14,20 @@ class NewCoinsRecommendReq(BaseModel):
 
 class NewCoinsRecommendResp(BaseModel):
     new_coins: List[dict]
+
+
+class NewCoinsRecommendState(TypedDict):
+    recall: Annotated[Optional[List[dict]], state_overwrite]
+
+
+class FilterCoinsbyPlatformGraphNode(BaseGraphNode):
+
+    @classmethod
+    def node_name(cls) -> str:
+        return 'filter-coins-by-platform-node'
+
+    async def _func(self, state: NewCoinsRecommendState):
+        pass
 
 
 class NewCoinsRecommendBotAgent(object):

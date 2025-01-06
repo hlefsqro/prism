@@ -12,6 +12,24 @@ from pydantic import BaseModel, computed_field
 logger = logging.getLogger(__name__)
 
 
+def state_overwrite(x, y):
+    return y
+
+
+def state_return_old_if_present(old, new):
+    if not old:
+        return new
+    return old
+
+
+def state_merge_list(left, right):
+    if not isinstance(left, list):
+        left = [left]
+    if not isinstance(right, list):
+        right = [right]
+    return left + right
+
+
 class BaseGraphNode(BaseModel):
 
     @classmethod
