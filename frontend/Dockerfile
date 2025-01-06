@@ -1,9 +1,11 @@
-FROM caddy:alpine
+FROM node:18
 
-COPY Caddyfile /etc/caddy/Caddyfile
+WORKDIR /usr/src/app
 
-COPY out /usr/share/caddy
+COPY out .
+
+RUN npm install -g http-server
 
 EXPOSE 80
 
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
+CMD ["http-server", "-p", "80", "-c-1"]
