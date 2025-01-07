@@ -177,3 +177,7 @@ cython_debug/
 /backend/demo/
 /frontend/out/
 /proxy/
+/backend/prism/graph/filter_coins_graph_node.py
+/backend/prism/graph/rank_coins.py
+/backend/prism/graph/recall_market_cap_coins_graph_node.py
+/backend/prism/graph/search_derivative_new_coins_graph_node.py
